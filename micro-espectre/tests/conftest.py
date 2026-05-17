@@ -12,6 +12,7 @@ import math
 import pytest
 import numpy as np
 import json
+import re
 from pathlib import Path
 from collections import defaultdict
 from datetime import datetime
@@ -146,9 +147,113 @@ def _pair_is_temporally_valid(dataset_info, label, entry):
         return False
     return abs((t2 - t1).total_seconds()) <= PAIR_MAX_DELTA_SECONDS
 
+
+def extract_motion_start_from_description(description):
+    """Extract motion start packet index from free-text test metadata."""
+    if not description:
+        return None
+
+    match = re.search(
+        r"motion\s+starts\s+at\s+packet(?:\s+index)?(?:\s+n\.)?\s+(\d+)",
+        str(description),
+        re.IGNORECASE,
+    )
+    if match:
+        return int(match.group(1))
+    return None
+
+
+def get_available_long_test_datasets(chips=None):
+    """
+    Return available long test recordings with validated split metadata.
+
+    Each item is a tuple:
+        (test_path, baseline_packets, movement_packets, motion_start_packet, chip, entry)
+    """
+    from csi_utils import load_npz_as_packets
+
+    dataset_info = _load_dataset_info()
+    test_entries = dataset_info.get("files", {}).get("test", [])
+    if not test_entries:
+        return []
+
+    requested = {chip.upper() for chip in chips} if chips else None
+    datasets = []
+
+    for entry in test_entries:
+        chip = str(entry.get("chip", "")).upper()
+        if requested and chip not in requested:
+            continue
+
+        filename = entry.get("filename")
+        if not filename:
+            continue
+
+        test_path = DATA_DIR / "test" / filename
+        if not test_path.exists():
+            continue
+
+        packets = load_npz_as_packets(test_path)
+        if len(packets) < 2:
+            continue
+
+        motion_start_packet = extract_motion_start_from_description(entry.get("description"))
+        if motion_start_packet is None:
+            motion_start_packet = len(packets) // 2
+
+        if motion_start_packet <= 0 or motion_start_packet >= len(packets):
+            continue
+
+        baseline_packets = packets[:motion_start_packet]
+        movement_packets = packets[motion_start_packet:]
+        datasets.append(
+            (
+                test_path,
+                baseline_packets,
+                movement_packets,
+                motion_start_packet,
+                chip,
+                entry,
+            )
+        )
+
+    datasets.sort(key=lambda item: item[4])
+    return datasets
+
+
+def build_long_test_params(chips=None):
+    """Build stable pytest params for available long test recordings."""
+    params = []
+    for dataset in get_available_long_test_datasets(chips=chips):
+        _, baseline_packets, movement_packets, motion_start_packet, chip, _ = dataset
+        params.append(
+            pytest.param(
+                dataset,
+                id=(
+                    f"{chip.lower()}_long_"
+                    f"{len(baseline_packets)}b_{len(movement_packets)}m_"
+                    f"start{motion_start_packet}"
+                ),
+            )
+        )
+    if not params:
+        params.append(
+            pytest.param(
+                None,
+                marks=pytest.mark.skip(reason="No long test recordings available in data/test"),
+                id="no_long_test_recordings",
+            )
+        )
+    return params
+
 # ============================================================================
 # Configuration Fixtures
 # ============================================================================
+
+@pytest.fixture(params=build_long_test_params())
+def long_test_config(request):
+    """Validated long test recording split from data/test/."""
+    return request.param
 
 @pytest.fixture
 def default_subcarriers(request):

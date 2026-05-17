@@ -112,6 +112,9 @@ void ESpectreComponent::setup() {
     this->publish_interval_,
     this->gain_lock_mode_
   );
+  this->csi_manager_.set_evaluation_interval(this->evaluation_interval_);
+  this->csi_manager_.set_motion_on_hits(this->motion_on_hits_);
+  this->csi_manager_.set_motion_off_hits(this->motion_off_hits_);
   this->csi_manager_.set_game_mode_callback([this](float movement, float threshold) {
     if (!this->ble_channel_enabled_ || !this->ble_client_connected_ || this->ble_telemetry_char_ == nullptr) {
       return;
@@ -154,11 +157,20 @@ ESpectreComponent::~ESpectreComponent() {
 }
 
 void ESpectreComponent::on_wifi_connected_() {
+  this->motion_state_ = MotionState::IDLE;
+  this->csi_manager_.set_motion_state_callback([this](MotionState state) {
+    this->motion_state_ = state;
+    if (!this->ready_to_publish_) {
+      return;
+    }
+    this->sensor_publisher_.publish_motion_binary(state);
+  });
   
   // Enable CSI using CSI Manager with periodic callback
   if (!this->csi_manager_.is_enabled()) {
     ESP_ERROR_CHECK(this->csi_manager_.enable(
       [this](MotionState state, uint32_t packets_received) {
+        this->motion_state_ = state;
 
         // Don't publish until ready
         if (!this->ready_to_publish_) return;
@@ -173,8 +185,8 @@ void ESpectreComponent::on_wifi_connected_() {
         // Log status with progress bar and actual CSI rate
         this->sensor_publisher_.log_status(TAG, this->detector_, state, packets_received);
         
-        // Publish all sensors
-        this->sensor_publisher_.publish_all(this->detector_, state);
+        // Publish slow-changing sensors on the periodic cadence.
+        this->sensor_publisher_.publish_movement_metric(this->detector_);
       }
     ));
   }
@@ -232,6 +244,7 @@ void ESpectreComponent::on_wifi_connected_() {
 void ESpectreComponent::on_wifi_disconnected_() {
   // Disable CSI using CSI Manager
   this->csi_manager_.disable();
+  this->motion_state_ = MotionState::IDLE;
   
   // Stop traffic generator
   if (this->traffic_generator_.is_running()) {
@@ -426,6 +439,10 @@ void ESpectreComponent::send_system_info_ble_() {
   notify_sysinfo(line);
   snprintf(line, sizeof(line), "publish_interval=%u", this->publish_interval_);
   notify_sysinfo(line);
+  snprintf(line, sizeof(line), "evaluation_interval=%u", this->evaluation_interval_);
+  notify_sysinfo(line);
+  snprintf(line, sizeof(line), "motion_hits=%u/%u", this->motion_on_hits_, this->motion_off_hits_);
+  notify_sysinfo(line);
   snprintf(line, sizeof(line), "best_pxx=%.4f", this->best_pxx_);
   notify_sysinfo(line);
   notify_sysinfo("END");
@@ -515,6 +532,10 @@ void ESpectreComponent::dump_config() {
   ESP_LOGCONFIG(TAG, "");
   ESP_LOGCONFIG(TAG, " PUBLISH INTERVAL");
   ESP_LOGCONFIG(TAG, " └─ Packets ............ %u", this->publish_interval_);
+  ESP_LOGCONFIG(TAG, "");
+  ESP_LOGCONFIG(TAG, " EVALUATION");
+  ESP_LOGCONFIG(TAG, " ├─ Interval ........... %u pkts", this->evaluation_interval_);
+  ESP_LOGCONFIG(TAG, " └─ Hits on/off ........ %u / %u", this->motion_on_hits_, this->motion_off_hits_);
   ESP_LOGCONFIG(TAG, "");
   ESP_LOGCONFIG(TAG, " LOW-PASS FILTER");
   ESP_LOGCONFIG(TAG, " ├─ Status ............. %s", this->lowpass_enabled_ ? "[ENABLED]" : "[DISABLED]");

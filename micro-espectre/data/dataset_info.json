@@ -518,7 +518,7 @@
         "duration_ms": 59989,
         "num_packets": 6068,
         "gain_locked": true,
-        "description": "HT20 test, AGC gain locked. Motion starts at packet index 3040 (~30.0 s).",
+        "description": "HT20 test, AGC gain locked. Motion starts at packet index 3087 (~30.5 s).",
         "environment": "bedroom"
       },
       {
@@ -530,7 +530,7 @@
         "duration_ms": 60000,
         "num_packets": 6379,
         "gain_locked": true,
-        "description": "HT20 test, AGC gain locked. Motion starts at packet index 3250 (~30.0 s).",
+        "description": "HT20 test, AGC gain locked. Motion starts at packet index 3263 (~30.7 s).",
         "environment": "bedroom"
       },
       {
@@ -542,7 +542,7 @@
         "duration_ms": 60010,
         "num_packets": 6008,
         "gain_locked": true,
-        "description": "HT20 test, AGC gain locked. Motion starts at packet index 3040 (~30.0 s).",
+        "description": "HT20 test, AGC gain locked. Motion starts at packet index 3320 (~33.2 s).",
         "environment": "bedroom"
       }
     ]

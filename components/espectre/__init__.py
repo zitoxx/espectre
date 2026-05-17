@@ -39,6 +39,9 @@ CONF_SEGMENTATION_THRESHOLD = "segmentation_threshold"
 CONF_SEGMENTATION_WINDOW_SIZE = "segmentation_window_size"
 CONF_TRAFFIC_GENERATOR_RATE = "traffic_generator_rate"
 CONF_PUBLISH_INTERVAL = "publish_interval"
+CONF_EVALUATION_INTERVAL = "evaluation_interval"
+CONF_MOTION_ON_HITS = "motion_on_hits"
+CONF_MOTION_OFF_HITS = "motion_off_hits"
 CONF_SELECTED_SUBCARRIERS = "selected_subcarriers"
 
 # Low-pass filter
@@ -138,6 +141,9 @@ CONFIG_SCHEMA = cv.Schema({
     # MVS: Moving Variance Segmentation - adaptive threshold, general purpose
     # ML: Machine Learning (MLP neural network) - higher accuracy, fixed subcarriers
     cv.Optional(CONF_DETECTION_ALGORITHM, default="mvs"): cv.one_of("mvs", "ml", lower=True),
+    cv.Optional(CONF_EVALUATION_INTERVAL, default=25): cv.int_range(min=1, max=1000),
+    cv.Optional(CONF_MOTION_ON_HITS, default=3): cv.int_range(min=1, max=20),
+    cv.Optional(CONF_MOTION_OFF_HITS, default=3): cv.int_range(min=1, max=20),
 
     # BLE telemetry/control channel (Web Bluetooth)
     # "auto" = enable when compatible BLE IDs are present in config
@@ -306,6 +312,9 @@ async def to_code(config):
     cg.add(var.set_gain_lock_mode(config[CONF_GAIN_LOCK]))
     cg.add(var.set_detection_algorithm(config[CONF_DETECTION_ALGORITHM]))
     cg.add(var.set_publish_interval(config[CONF_PUBLISH_INTERVAL]))
+    cg.add(var.set_evaluation_interval(config[CONF_EVALUATION_INTERVAL]))
+    cg.add(var.set_motion_on_hits(config[CONF_MOTION_ON_HITS]))
+    cg.add(var.set_motion_off_hits(config[CONF_MOTION_OFF_HITS]))
     cg.add(var.set_ble_channel_enabled(config[CONF_BLE_CHANNEL_ENABLED]))
     cg.add(var.set_ble_telemetry_interval_ms(config[CONF_BLE_TELEMETRY_INTERVAL_MS]))
     

@@ -23,6 +23,10 @@ MQTT_PASSWORD = "mqtt"
 # Traffic Generator Configuration
 # Generates WiFi traffic to ensure continuous CSI data
 TRAFFIC_GENERATOR_RATE = 100  # Default rate (packets per second, recommended: 100)
+PUBLISH_INTERVAL = 100        # Packets between periodic MQTT/log updates
+EVALUATION_INTERVAL = 25      # Packets between internal detector evaluations
+MOTION_ON_HITS = 3            # Consecutive evaluated hits required for IDLE -> MOTION
+MOTION_OFF_HITS = 3           # Consecutive evaluated hits required for MOTION -> IDLE
 
 # CSI Configuration
 CSI_BUFFER_SIZE = 8  # Circular buffer size (used to store csi packets until processed)

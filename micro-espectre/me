@@ -524,6 +524,7 @@ def deploy_code(args):
             ('src/features.py', ':src/'),
             ('src/segmentation.py', ':src/'),
             ('src/detector_interface.py', ':src/'),
+            ('src/runtime_policy.py', ':src/'),
             ('src/mvs_detector.py', ':src/'),
             ('src/ml_detector.py', ':src/'),
             ('src/ml_weights.py', ':src/'),

@@ -227,7 +227,10 @@ All parameters can be adjusted in the YAML file under the `espectre:` section:
 | `detection_algorithm` | string | mvs | Detection algorithm: `mvs` (variance) or `ml` (neural network) |
 | `traffic_generator_rate` | int | 100 | Packets/sec for CSI generation (0-1000, 0=disabled) |
 | `traffic_generator_mode` | string | dns | Traffic generator mode: `dns` (UDP queries) or `ping` (ICMP) |
-| `publish_interval` | int | auto | Packets between sensor updates (default: same as traffic_generator_rate, or 100 if traffic is 0) |
+| `publish_interval` | int | auto | Packets between periodic sensor/log updates (default: same as traffic_generator_rate, or 100 if traffic is 0) |
+| `evaluation_interval` | int | 25 | Packets between internal detector state evaluations |
+| `motion_on_hits` | int | 3 | Consecutive evaluated hits required before switching the binary sensor to `MOTION` |
+| `motion_off_hits` | int | 3 | Consecutive evaluated hits required before switching the binary sensor back to `IDLE` |
 | `segmentation_threshold` | string/float | auto | Threshold: `auto`, `min`, or number (0.0-10.0 for both MVS and ML) |
 | `segmentation_window_size` | int | 75 | Moving variance window in packets (10-200) |
 | `selected_subcarriers` | list | auto | Fixed subcarriers (omit for auto-calibration) |
@@ -268,7 +271,7 @@ All sensors are created automatically when the `espectre` component is configure
 | Sensor Config | Type | Default Name | Description |
 |---------------|------|--------------|-------------|
 | `movement_sensor` | sensor | "Movement Score" | Current motion score on a 0-10 scale (more gradual in ML mode) |
-| `motion_sensor` | binary_sensor | "Motion Detected" | Motion state (on/off) |
+| `motion_sensor` | binary_sensor | "Motion Detected" | Edge-driven motion state (on/off), filtered by `evaluation_interval` and hit counters |
 | `threshold_number` | number | "Threshold" | Detection threshold (adjustable from HA) |
 | `calibrate_switch` | switch | "Calibrate" | Trigger band recalibration (ON during calibration) |
 
@@ -499,7 +502,8 @@ You can disable the internal traffic generator and rely on external WiFi traffic
 ```yaml
 espectre:
   traffic_generator_rate: 0      # Disable internal generator
-  publish_interval: 100          # Publish sensors every 100 packets
+  publish_interval: 100          # Publish movement score/logs every 100 packets
+  evaluation_interval: 25        # Re-evaluate motion state every 25 packets
 ```
 
 This is useful when:

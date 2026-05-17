@@ -144,6 +144,8 @@ END
 | `hampel_threshold` | Hampel threshold |
 | `traffic_rate` | Traffic generator rate (packets/sec) |
 | `publish_interval` | ESPectre publish interval (packets) |
+| `evaluation_interval` | Detector evaluation interval (packets) |
+| `motion_hits` | Motion enter/exit hit counters (`on/off`) |
 | `best_pxx` | Calibration baseline metric used for adaptive thresholding |
 | `proto_version` | Game BLE protocol version |
 | `END` | Marks end of system info block |

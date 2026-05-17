@@ -18,6 +18,14 @@ namespace espectre {
 
 static const char *TAG = "CSIManager";
 
+static void publish_motion_state_if_changed_(MotionState previous_state,
+                                             MotionState current_state,
+                                             const motion_state_callback_t &callback) {
+  if (callback && previous_state != current_state) {
+    callback(current_state);
+  }
+}
+
 static void log_wrong_sc_packet_(const wifi_csi_info_t* data, size_t csi_len,
                                  uint32_t packets_filtered) {
   const auto &rx = data->rx_ctrl;
@@ -56,6 +64,7 @@ void CSIManager::init(BaseDetector* detector,
   
   // Initialize gain controller for AGC/FFT locking (uses median for robustness)
   gain_controller_.init(gain_lock_mode);
+  reset_motion_state_filter_();
   
   ESP_LOGD(TAG, "CSI Manager initialized with %s detector", 
            detector_ ? detector_->get_name() : "NULL");
@@ -75,10 +84,43 @@ void CSIManager::set_threshold(float threshold) {
 
 void CSIManager::clear_detector_buffer() {
   if (detector_) {
+    MotionState previous_state = effective_motion_state_;
     // Cold reset: clear turbulence history and state.
     // Required after channel switch and post-calibration to avoid stale samples.
     detector_->clear_buffer();
+    packets_since_evaluation_ = 0;
+    reset_motion_state_filter_();
+    publish_motion_state_if_changed_(previous_state, effective_motion_state_, motion_state_callback_);
   }
+}
+
+MotionState CSIManager::update_effective_motion_state_(MotionState detector_state) {
+  if (detector_state == effective_motion_state_) {
+    pending_motion_state_ = effective_motion_state_;
+    pending_state_hits_ = 0;
+    return effective_motion_state_;
+  }
+
+  if (detector_state != pending_motion_state_) {
+    pending_motion_state_ = detector_state;
+    pending_state_hits_ = 1;
+  } else if (pending_state_hits_ < UINT8_MAX) {
+    pending_state_hits_++;
+  }
+
+  uint8_t required_hits = (pending_motion_state_ == MotionState::MOTION) ? motion_on_hits_ : motion_off_hits_;
+  if (pending_state_hits_ >= required_hits) {
+    effective_motion_state_ = pending_motion_state_;
+    pending_state_hits_ = 0;
+  }
+
+  return effective_motion_state_;
+}
+
+void CSIManager::reset_motion_state_filter_(MotionState state) {
+  effective_motion_state_ = state;
+  pending_motion_state_ = state;
+  pending_state_hits_ = 0;
 }
 
 void CSIManager::process_packet(wifi_csi_info_t* data) {
@@ -149,13 +191,19 @@ void CSIManager::process_packet(wifi_csi_info_t* data) {
   
   detector_->process_packet(csi_data, csi_len, selected_subcarriers_, NUM_SUBCARRIERS);
   
-  // Handle periodic callback (or game mode which needs every packet)
+  // Evaluate state on the internal cadence, but always refresh before a periodic publish.
   packets_processed_++;
+  packets_since_evaluation_++;
   const bool should_publish = packets_processed_ >= publish_rate_;
+  const bool should_evaluate = should_publish || packets_since_evaluation_ >= evaluation_interval_;
   
-  if (game_mode_callback_ || should_publish) {
-    // Update detector state (lazy evaluation)
+  if (should_evaluate) {
+    // Update detector state on the internal cadence.
+    MotionState previous_state = effective_motion_state_;
     detector_->update_state();
+    MotionState current_state = update_effective_motion_state_(detector_->get_state());
+    publish_motion_state_if_changed_(previous_state, current_state, motion_state_callback_);
+    packets_since_evaluation_ = 0;
     
     // Log detection time periodically (every ~10 seconds at 100 pps)
     if (should_measure) {
@@ -178,11 +226,12 @@ void CSIManager::process_packet(wifi_csi_info_t* data) {
         ESP_LOGW(TAG, "WiFi channel changed: %d -> %d, resetting detection buffer",
                  current_channel_, packet_channel);
         clear_detector_buffer();
+        current_state = effective_motion_state_;
       }
       current_channel_ = packet_channel;
       
       if (packet_callback_) {
-        packet_callback_(detector_->get_state(), packets_processed_);
+        packet_callback_(current_state, packets_processed_);
       }
       packets_processed_ = 0;
     }
@@ -247,6 +296,9 @@ esp_err_t CSIManager::disable() {
   
   enabled_ = false;
   packet_callback_ = nullptr;
+  motion_state_callback_ = nullptr;
+  packets_since_evaluation_ = 0;
+  reset_motion_state_filter_();
   ESP_LOGI(TAG, "CSI disabled and callback unregistered");
   
   return ESP_OK;

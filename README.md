@@ -182,14 +182,20 @@ ESPectre uses a focused processing pipeline for motion detection:
        │
        ▼
 ┌─────────────┐
-│Segmentation │  MVS algorithm
-│    (MVS)    │  IDLE ↔ MOTION
+│ Detection   │  MVS or ML score
+│ Evaluation  │  every evaluation_interval packets
 └──────┬──────┘
        │
        ▼
 ┌─────────────┐
-│ Home        │  Native ESPHome integration
-│ Assistant   │  Binary sensor + Movement/Threshold
+│ Hit Filter  │  motion_on_hits / motion_off_hits
+│             │  edge-driven IDLE ↔ MOTION
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│ Home        │  Edge-driven motion binary +
+│ Assistant   │  periodic Movement Score / Threshold
 └─────────────┘
 ```
 
@@ -212,8 +218,8 @@ ESPectre uses a focused processing pipeline for motion detection:
 ```
 
 Each sensor is automatically discovered by Home Assistant with:
-- Binary sensor for motion detection
-- Movement score sensor
+- Binary sensor for motion detection, published immediately on state edges
+- Movement score sensor, published on the periodic cadence
 - Adjustable threshold (number entity)
 
 ### Automatic Subcarrier Selection

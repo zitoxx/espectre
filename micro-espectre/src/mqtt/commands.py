@@ -65,7 +65,11 @@ class MQTTCommands:
         
         info = {
             "algorithm": algorithm,
-            "calibrator": calibrator
+            "calibrator": calibrator,
+            "publish_interval": getattr(self.config, 'PUBLISH_INTERVAL', 100),
+            "evaluation_interval": getattr(self.config, 'EVALUATION_INTERVAL', 25),
+            "motion_on_hits": getattr(self.config, 'MOTION_ON_HITS', 3),
+            "motion_off_hits": getattr(self.config, 'MOTION_OFF_HITS', 3),
         }
         # Add MVS-specific parameters
         if self._is_mvs:

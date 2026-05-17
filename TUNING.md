@@ -191,7 +191,9 @@ espectre:
 
 ### Publish Interval (1-1000 packets)
 
-**What it does:** Controls how many CSI packets are processed before updating Home Assistant sensors.
+**What it does:** Controls how often ESPectre publishes the movement score and periodic logs.
+The motion binary sensor is no longer tied to this cadence: it is published
+immediately on `IDLE <-> MOTION` state changes.
 
 **Default:** Same as `traffic_generator_rate` (or 100 if traffic generator is disabled)
 
@@ -208,7 +210,31 @@ espectre:
   publish_interval: 50  # Optional: override publish rate
 ```
 
-> **Note:** Lower `publish_interval` values increase CPU usage and Home Assistant traffic but provide more responsive detection.
+> **Note:** Lower `publish_interval` values increase Home Assistant traffic and
+> dashboard refresh frequency, but the internal motion detection cadence is
+> controlled separately by `evaluation_interval`.
+
+### Evaluation Interval (1-1000 packets)
+
+**What it does:** Controls how often the detector state machine is evaluated
+internally. This cadence feeds the binary sensor edge detection and the
+`motion_on_hits` / `motion_off_hits` counters.
+
+**Default:** `25`
+
+**Configuration:**
+```yaml
+espectre:
+  evaluation_interval: 25
+  motion_on_hits: 3
+  motion_off_hits: 3
+```
+
+**How to think about it:**
+- Lower values react faster but evaluate more often
+- Higher values are cheaper but add latency
+- `3` hits with `evaluation_interval: 25` means roughly `75` packets of
+  consistent evidence before changing state
 
 <details>
 <summary><b>Understanding Sampling Rates (Nyquist-Shannon Theorem)</b></summary>

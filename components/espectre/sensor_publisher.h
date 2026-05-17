@@ -31,13 +31,18 @@ class SensorPublisher {
   void set_motion_binary_sensor(binary_sensor::BinarySensor *sensor) { motion_binary_sensor_ = sensor; }
   
   /**
-   * Publish all sensors with current values
+   * Publish the motion binary sensor only.
    * 
-   * @param detector Motion detector (BaseDetector*)
    * @param motion_state Current motion state
    */
-  void publish_all(const BaseDetector *detector,
-                   MotionState motion_state);
+  void publish_motion_binary(MotionState motion_state);
+  
+  /**
+   * Publish the movement metric only.
+   *
+   * @param detector Motion detector (BaseDetector*)
+   */
+  void publish_movement_metric(const BaseDetector *detector);
   
   /**
    * Log status with progress bar

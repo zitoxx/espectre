@@ -15,6 +15,7 @@ from src.mvs_detector import MVSDetector
 from src.ml_detector import MLDetector
 from src.mqtt.handler import MQTTHandler
 from src.traffic_generator import TrafficGenerator
+from src.runtime_policy import RuntimeMotionPolicy
 import src.config as config
 
 # Gain lock configuration
@@ -666,8 +667,14 @@ def main():
     remap_logged = False
     ht57_remap_buffer = bytearray(EXPECTED_CSI_LEN)
     
-    # Calculate optimal sleep based on traffic rate
-    publish_rate = traffic_gen.get_rate() if traffic_gen.is_running() else 100
+    publish_rate = getattr(config, 'PUBLISH_INTERVAL', None)
+    if publish_rate is None:
+        publish_rate = traffic_gen.get_rate() if traffic_gen.is_running() else 100
+    runtime_policy = RuntimeMotionPolicy(
+        evaluation_interval=getattr(config, 'EVALUATION_INTERVAL', 25),
+        motion_on_hits=getattr(config, 'MOTION_ON_HITS', 3),
+        motion_off_hits=getattr(config, 'MOTION_OFF_HITS', 3),
+    )
        
     try:
         while True:
@@ -709,51 +716,56 @@ def main():
                 detector.process_packet(csi_data, config.SELECTED_SUBCARRIERS)
                 
                 publish_counter += 1
+                runtime_policy.note_packet()
+                should_publish = publish_counter >= publish_rate
                 
-                # Publish every N packets (where N = publish_rate)
-                if publish_counter >= publish_rate:
+                if runtime_policy.should_evaluate(should_publish):
                     # Detect WiFi channel changes (AP may switch channels automatically)
                     # Channel changes cause CSI spikes that trigger false motion detection
                     if g_state.current_channel != 0 and packet_channel != g_state.current_channel:
                         print(f"[WARN] WiFi channel changed: {g_state.current_channel} -> {packet_channel}, resetting detection buffer")
                         detector.reset()
+                        runtime_policy.reset()
                     g_state.current_channel = packet_channel
                     
-                    # Update state (lazy evaluation)
                     metrics = detector.update_state()
-                    current_time = time.ticks_ms()
-                    time_delta = time.ticks_diff(current_time, last_publish_time)
-                    
-                    # Calculate packets per second
-                    pps = int((publish_counter * 1000) / time_delta) if time_delta > 0 else 0
-                    
-                    dropped = wlan.csi_dropped()
-                    dropped_delta = dropped - last_dropped
-                    last_dropped = dropped
-                    
-                    state_str = 'MOTION' if metrics['state'] == 1 else 'IDLE'
-                    motion_metric = metrics.get('moving_variance', metrics.get('jitter', metrics.get('probability', 0)))
-                    threshold = metrics['threshold']
-                    is_ml = 'probability' in metrics
-                    # For ML, probability and threshold are both 0-1, so progress = probability
-                    if is_ml:
-                        progress = motion_metric  # probability is already 0-1
-                    else:
-                        progress = motion_metric / threshold if threshold > 0 else 0
-                    progress_bar = format_progress_bar(progress, threshold, is_probability=is_ml)
-                    print(f"{progress_bar} | pkts:{publish_counter} drop:{dropped_delta} pps:{pps} | "
-                          f"mvmt:{motion_metric:.4f} thr:{threshold:.4f} | {state_str}")
-                    
-                    mqtt_handler.publish_state(
-                        motion_metric,
-                        metrics['state'],
-                        threshold,
-                        publish_counter,
-                        dropped_delta,
-                        pps
-                    )
-                    publish_counter = 0
-                    last_publish_time = current_time
+                    effective_state, _ = runtime_policy.apply_state(metrics['state'])
+                    runtime_policy.after_evaluation()
+
+                    if should_publish:
+                        current_time = time.ticks_ms()
+                        time_delta = time.ticks_diff(current_time, last_publish_time)
+                        
+                        # Calculate packets per second
+                        pps = int((publish_counter * 1000) / time_delta) if time_delta > 0 else 0
+                        
+                        dropped = wlan.csi_dropped()
+                        dropped_delta = dropped - last_dropped
+                        last_dropped = dropped
+                        
+                        state_str = 'MOTION' if effective_state == 1 else 'IDLE'
+                        motion_metric = metrics.get('moving_variance', metrics.get('jitter', metrics.get('probability', 0)))
+                        threshold = metrics['threshold']
+                        is_ml = 'probability' in metrics
+                        # For ML, probability and threshold are both 0-1, so progress = probability
+                        if is_ml:
+                            progress = motion_metric  # probability is already 0-1
+                        else:
+                            progress = motion_metric / threshold if threshold > 0 else 0
+                        progress_bar = format_progress_bar(progress, threshold, is_probability=is_ml)
+                        print(f"{progress_bar} | pkts:{publish_counter} drop:{dropped_delta} pps:{pps} | "
+                              f"mvmt:{motion_metric:.4f} thr:{threshold:.4f} | {state_str}")
+                        
+                        mqtt_handler.publish_state(
+                            motion_metric,
+                            effective_state,
+                            threshold,
+                            publish_counter,
+                            dropped_delta,
+                            pps
+                        )
+                        publish_counter = 0
+                        last_publish_time = current_time
 
                 # Update loop time metric
                 g_state.loop_time_us = time.ticks_diff(time.ticks_us(), loop_start)

@@ -419,7 +419,17 @@ CALIBRATION_ALGORITHM = "nbvi"  # NBVI is the sole calibration algorithm
 ```python
 SEG_THRESHOLD = "auto"     # "auto" (adaptive), "min" (max baseline), or 0.0-10.0
 SEG_WINDOW_SIZE = 75       # Moving variance window (10-200 packets)
+PUBLISH_INTERVAL = 100     # Periodic MQTT/log publish cadence
+EVALUATION_INTERVAL = 25   # Detector evaluation cadence (independent from publish)
+MOTION_ON_HITS = 3         # Consecutive evaluated MOTION hits required to enter MOTION
+MOTION_OFF_HITS = 3        # Consecutive evaluated IDLE hits required to return to IDLE
 ```
+
+`SEG_WINDOW_SIZE` still defines the analysis window, while `EVALUATION_INTERVAL`
+controls how often the detector state machine is evaluated during runtime. The
+published MQTT payload remains periodic (`PUBLISH_INTERVAL`), but the reported
+`state` now reflects the filtered runtime state after the `MOTION_ON_HITS` /
+`MOTION_OFF_HITS` debounce logic has been applied.
 
 ### 5. Filters (Optional, MVS and ML)
 
@@ -453,6 +463,11 @@ The system publishes JSON payloads to the configured MQTT topic (default: `home/
   "timestamp": 1700000000        // Unix timestamp
 }
 ```
+
+The payload is emitted every `PUBLISH_INTERVAL` packets. Its `state` field is
+not the raw detector output of a single evaluation: it is the effective runtime
+state after evaluation every `EVALUATION_INTERVAL` packets and after the
+`MOTION_ON_HITS` / `MOTION_OFF_HITS` consecutive-hit filter.
 
 ## Analysis Tools
 
@@ -704,7 +719,16 @@ Publish JSON commands to `home/espectre/node1/cmd`:
     "cmd_topic": "home/espectre/node1/cmd",
     "response_topic": "home/espectre/node1/response"
   },
-  "segmentation": {"threshold": 1.0, "window_size": 75},
+  "detection": {
+    "algorithm": "MVS",
+    "calibrator": "nbvi",
+    "threshold": 1.0,
+    "window_size": 75,
+    "publish_interval": 100,
+    "evaluation_interval": 25,
+    "motion_on_hits": 3,
+    "motion_off_hits": 3
+  },
   "subcarriers": {"indices": [6, 9, 10, 15, 18, 19, 30, 33, 36, 40, 49, 52]}
 }
 ```

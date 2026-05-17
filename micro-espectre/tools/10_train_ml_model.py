@@ -2682,9 +2682,48 @@ def train_all(fp_weight=DEFAULT_FP_WEIGHT, seed=None, feature_names=None,
     return 0, seed, cv_results
 
 
+def _parse_long_recording_metrics(output):
+    """Parse the stable long-recording ML summary table emitted by pytest."""
+    pattern = re.compile(
+        r"\|\s*([A-Za-z0-9_-]+)\s*\|"
+        r"\s*([0-9.]+)%\s*\|"
+        r"\s*([0-9.]+)%\s*\|"
+        r"\s*([0-9.]+)%\s*\|"
+        r"\s*([0-9.]+)%\s*\|"
+        r"\s*(\d+)\s*\|"
+    )
+    rows = []
+    for match in pattern.finditer(output):
+        chip, recall, precision, fp_rate, f1, fp_count = match.groups()
+        rows.append({
+            'chip': chip,
+            'recall': float(recall),
+            'precision': float(precision),
+            'fp_rate': float(fp_rate),
+            'f1': float(f1),
+            'fp_count': int(fp_count),
+        })
+
+    if not rows:
+        return None
+
+    return {
+        'rows': rows,
+        'by_chip': {r['chip']: r for r in rows},
+        'pass_count': int(sum(1 for r in rows if r['recall'] > 95.0 and r['fp_rate'] < 5.0)),
+        'mean_recall': float(np.mean([r['recall'] for r in rows])),
+        'worst_chip_recall': float(np.min([r['recall'] for r in rows])),
+        'mean_fp_rate': float(np.mean([r['fp_rate'] for r in rows])),
+        'max_fp_rate': float(np.max([r['fp_rate'] for r in rows])),
+        'mean_f1': float(np.mean([r['f1'] for r in rows])),
+        'worst_chip_f1': float(np.min([r['f1'] for r in rows])),
+        'total_fp': int(sum(r['fp_count'] for r in rows)),
+    }
+
+
 def _run_ml_performance_tests():
     """
-    Run ML-only performance tests and parse per-chip metrics.
+    Run the long-recording ML gate and parse per-chip metrics.
 
     Returns:
         tuple: (metrics_dict_or_none, raw_output)
@@ -2694,8 +2733,9 @@ def _run_ml_performance_tests():
         sys.executable,
         '-m',
         'pytest',
-        'tests/test_validation_real_data.py::TestPerformanceMetrics::test_ml_detection_accuracy',
+        'tests/test_validation_long_recordings.py::TestLongRecordings::test_ml_vs_test_recordings',
         '-v',
+        '-s',
     ]
     result = subprocess.run(
         cmd,
@@ -2704,51 +2744,20 @@ def _run_ml_performance_tests():
         text=True,
     )
     output = (result.stdout or "") + "\n" + (result.stderr or "")
-
-    # Parse lines from the "DETAILED METRICS (for PERFORMANCE.md)" table.
-    pattern = re.compile(
-        r"\|\s*([A-Za-z0-9_-]+)\s*\|\s*ML\s*\|\s*([0-9.]+)%\s*\|\s*([0-9.]+)%\s*\|\s*([0-9.]+)%\s*\|\s*([0-9.]+)%\s*\|"
-    )
-    rows = []
-    for match in pattern.finditer(output):
-        chip, recall, precision, fp_rate, f1 = match.groups()
-        rows.append({
-            'chip': chip,
-            'recall': float(recall),
-            'precision': float(precision),
-            'fp_rate': float(fp_rate),
-            'f1': float(f1),
-        })
-
-    if not rows:
-        return None, output
-
-    metrics = {
-        'rows': rows,
-        'by_chip': {r['chip']: r for r in rows},
-        'pass_count': int(sum(1 for r in rows if r['recall'] > 95.0 and r['fp_rate'] < 5.0)),
-        'mean_recall': float(np.mean([r['recall'] for r in rows])),
-        'min_recall': float(np.min([r['recall'] for r in rows])),
-        'max_fp_rate': float(np.max([r['fp_rate'] for r in rows])),
-        'mean_fp_rate': float(np.mean([r['fp_rate'] for r in rows])),
-        'mean_f1': float(np.mean([r['f1'] for r in rows])),
-    }
-    return metrics, output
+    return _parse_long_recording_metrics(output), output
 
 
 def _real_ml_gate_key(real_metrics):
     """Ranking key for ML-only real-data gate results."""
     if real_metrics is None:
         return None
-    esp32 = real_metrics.get('by_chip', {}).get('ESP32', {})
-    esp32_recall = esp32.get('recall', real_metrics['min_recall'])
     return (
-        real_metrics['pass_count'],
-        real_metrics['min_recall'],
-        esp32_recall,
-        -real_metrics['max_fp_rate'],
-        -real_metrics['mean_fp_rate'],
         real_metrics['mean_f1'],
+        real_metrics['worst_chip_f1'],
+        -real_metrics['total_fp'],
+        real_metrics['mean_recall'],
+        real_metrics['pass_count'],
+        -real_metrics['max_fp_rate'],
     )
 
 
@@ -2770,15 +2779,13 @@ def _format_real_ml_summary(real_metrics):
     """Build a short one-line summary for ML-only real-data gate metrics."""
     if real_metrics is None:
         return "real_ml_gate=unavailable"
-    esp32 = real_metrics.get('by_chip', {}).get('ESP32', {})
-    esp32_recall = esp32.get('recall', real_metrics['min_recall'])
-    esp32_fp = esp32.get('fp_rate', real_metrics['max_fp_rate'])
     total = len(real_metrics.get('rows', []))
     return (
-        f"real_pass={real_metrics['pass_count']}/{total} "
-        f"min_recall={real_metrics['min_recall']:.1f}% "
-        f"esp32={esp32_recall:.1f}%R/{esp32_fp:.1f}%FP "
-        f"max_fp={real_metrics['max_fp_rate']:.1f}%"
+        f"long_gate={total} "
+        f"mean_f1={real_metrics['mean_f1']:.1f}% "
+        f"worst_f1={real_metrics['worst_chip_f1']:.1f}% "
+        f"total_fp={real_metrics['total_fp']} "
+        f"mean_recall={real_metrics['mean_recall']:.1f}%"
     )
 
 

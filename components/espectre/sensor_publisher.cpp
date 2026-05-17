@@ -14,21 +14,19 @@
 namespace esphome {
 namespace espectre {
 
-void SensorPublisher::publish_all(const BaseDetector *detector,
-                                  MotionState motion_state) {
-  if (!detector) {
-    return;
-  }
-  
-  // Get current values
-  float motion_metric = detector->get_motion_metric();
+void SensorPublisher::publish_motion_binary(MotionState motion_state) {
   bool is_motion = (motion_state == MotionState::MOTION);
-  
-  // Publish motion sensors
   if (motion_binary_sensor_) {
     motion_binary_sensor_->publish_state(is_motion);
   }
-  
+}
+
+void SensorPublisher::publish_movement_metric(const BaseDetector *detector) {
+  if (!detector) {
+    return;
+  }
+
+  float motion_metric = detector->get_motion_metric();
   if (movement_sensor_) {
     movement_sensor_->publish_state(motion_metric);
   }

@@ -28,6 +28,9 @@ class NBVICalibrator;
 // Callback type for processed CSI data
 using csi_processed_callback_t = std::function<void(MotionState, uint32_t)>;
 
+// Callback type for immediate motion-state changes
+using motion_state_callback_t = std::function<void(MotionState)>;
+
 // Callback type for game mode (called every packet with movement and threshold)
 using game_mode_callback_t = std::function<void(float movement, float threshold)>;
 
@@ -68,6 +71,9 @@ class CSIManager {
    * @param threshold New threshold value
    */
   void set_threshold(float threshold);
+  void set_evaluation_interval(uint32_t interval) { evaluation_interval_ = interval > 0 ? interval : 1; }
+  void set_motion_on_hits(uint8_t hits) { motion_on_hits_ = hits > 0 ? hits : 1; }
+  void set_motion_off_hits(uint8_t hits) { motion_off_hits_ = hits > 0 ? hits : 1; }
   
   /**
    * Enable CSI hardware and start processing
@@ -137,6 +143,13 @@ class CSIManager {
   }
   
   /**
+   * Set callback for immediate motion-state changes.
+   */
+  void set_motion_state_callback(motion_state_callback_t callback) {
+    motion_state_callback_ = callback;
+  }
+  
+  /**
    * Get the detector instance
    */
   BaseDetector* get_detector() { return detector_; }
@@ -148,18 +161,28 @@ class CSIManager {
   
  private:
   static void IRAM_ATTR csi_rx_callback_wrapper_(void* ctx, wifi_csi_info_t* data);
+  MotionState update_effective_motion_state_(MotionState detector_state);
+  void reset_motion_state_filter_(MotionState state = MotionState::IDLE);
   
   bool enabled_{false};
   BaseDetector* detector_{nullptr};
   const uint8_t* selected_subcarriers_{nullptr};
   NBVICalibrator* calibrator_{nullptr};
   csi_processed_callback_t packet_callback_;
+  motion_state_callback_t motion_state_callback_;
   game_mode_callback_t game_mode_callback_;
   uint32_t publish_rate_{100};
+  uint32_t evaluation_interval_{25};
   volatile uint32_t packets_processed_{0};
   volatile uint32_t packets_filtered_{0};
+  uint32_t packets_since_evaluation_{0};
   uint32_t packets_total_{0};
   uint8_t current_channel_{0};
+  uint8_t motion_on_hits_{3};
+  uint8_t motion_off_hits_{3};
+  uint8_t pending_state_hits_{0};
+  MotionState effective_motion_state_{MotionState::IDLE};
+  MotionState pending_motion_state_{MotionState::IDLE};
   
   IWiFiCSI* wifi_csi_{nullptr};
   WiFiCSIReal default_wifi_csi_;

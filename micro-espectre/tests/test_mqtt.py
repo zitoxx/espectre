@@ -69,6 +69,10 @@ class MockConfig:
     MQTT_USERNAME = "user"
     MQTT_PASSWORD = "pass"
     MQTT_TOPIC = "test/espectre"
+    PUBLISH_INTERVAL = 100
+    EVALUATION_INTERVAL = 25
+    MOTION_ON_HITS = 3
+    MOTION_OFF_HITS = 3
     # SELECTED_SUBCARRIERS is set dynamically by mock_config fixture
     SELECTED_SUBCARRIERS = None
 
@@ -696,6 +700,10 @@ class TestMQTTCommands:
         assert 'mqtt' in payload
         assert 'detection' in payload
         assert 'subcarriers' in payload
+        assert payload['detection']['publish_interval'] == 100
+        assert payload['detection']['evaluation_interval'] == 25
+        assert payload['detection']['motion_on_hits'] == 3
+        assert payload['detection']['motion_off_hits'] == 3
     
     def test_cmd_info_with_connected_wlan(self, mock_mqtt_client_instance, mock_config, mock_segmentation, mock_traffic_gen, mock_global_state):
         """Test info command with connected WLAN"""
