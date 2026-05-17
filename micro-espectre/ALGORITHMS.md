@@ -57,7 +57,7 @@ When a person moves in an environment, they alter multipath reflections, change 
 │                                                                                   │
 │  ┌──────────┐    ┌──────────┐    ┌──────────────┐    ┌─────────────┐              │
 │  │ CSI Data │───▶│Gain Lock │───▶│ Band Select  │───▶│ Turbulence  │              │
-│  │ N subcs  │    │ AGC/FFT  │    │ 12 subcs     │    │ σ/μ (CV)    │              │
+│  │ N subcs  │    │ AGC/FFT  │    │ 12 subcs     │    │ σ or σ/μ    │              │
 │  └──────────┘    └──────────┘    └──────────────┘    └──────┬──────┘              │
 │                  (3s, 300 pkt)   (7.5s, 10×window)          │                     │
 │                                                             ▼                     │
@@ -79,7 +79,7 @@ With default `window_size=75`, this means 750 packets. If you change `segmentati
 1. **CSI Data**: Raw I/Q values for 64 subcarriers (HT20 mode)
    - Espressif format: `[Q₀, I₀, Q₁, I₁, ...]` (Imaginary first, Real second per subcarrier)
 2. **Amplitude Extraction**: `|H| = √(I² + Q²)` for selected 12 subcarriers
-3. **Spatial Turbulence (CV)**: `CV = σ(amplitudes) / μ(amplitudes)` - gain-invariant variability
+3. **Spatial Turbulence**: `σ(amplitudes)` (raw std, gain locked) or `σ/μ` (CV, gain not locked — MVS only)
 4. **Hampel Filter** (optional): Remove outliers using MAD
 5. **Low-Pass Filter** (optional): Remove high-frequency noise (Butterworth 1st order)
 6. **Moving Variance**: `Var(turbulence)` over sliding window
@@ -461,7 +461,7 @@ By monitoring the **variance of turbulence** over a sliding window, we can relia
 
 1. **Spatial Turbulence**
 
-   Computed per packet from the 12 selected subcarrier amplitudes. Uses raw std when gain is locked, or CV normalization otherwise (see [CV Normalization](#cv-normalization-gain-invariant-turbulence)).
+   Computed per packet from the 12 selected subcarrier amplitudes. MVS uses raw std when gain is locked, or CV normalization otherwise (see [CV Normalization](#cv-normalization-gain-invariant-turbulence)). ML always uses raw std regardless of gain lock status.
 
 2. **Moving Variance (Two-Pass Algorithm)**
    ```
@@ -536,7 +536,7 @@ Those numbers were measured before the switch to grouped session-level CV with b
 ```
 ┌──────────────┐    ┌──────────────┐    ┌───────────────────┐    ┌──────────────┐
 │ CSI Packet   │───▶│ Turbulence   │───▶│ Optional Filters  │───▶│ Buffer (75)  │
-│              │    │ σ/μ (CV)     │    │ Hampel + LowPass  │    │              │
+│              │    │ σ (raw std)  │    │ Hampel + LowPass  │    │              │
 └──────────────┘    └──────────────┘    └───────────────────┘    └──────┬───────┘
                                                                         │
                                                                         ▼

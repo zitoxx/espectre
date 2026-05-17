@@ -895,7 +895,7 @@ class TestPerformanceMetrics:
         assert pkt_recall > recall_target, f"Recall too low: {pkt_recall:.1f}% (target: >{recall_target}%)"
         assert pkt_fp_rate < fp_rate_target, f"FP Rate too high: {pkt_fp_rate:.1f}% (target: <{fp_rate_target}%)"
 
-    def test_ml_detection_accuracy(self, real_data, num_subcarriers, ml_fp_rate_target, ml_recall_target, chip_type, use_cv_normalization):
+    def test_ml_detection_accuracy(self, real_data, num_subcarriers, ml_fp_rate_target, ml_recall_target, chip_type):
         """
         Test ML (Neural Network) motion detection accuracy with real CSI data.
         
@@ -903,7 +903,7 @@ class TestPerformanceMetrics:
         No calibration needed - uses pre-trained weights.
         
         Note: ML model uses fixed subcarriers from config.DEFAULT_SUBCARRIERS regardless of chip type.
-        CV normalization is enabled for chips without gain lock (ESP32).
+        CV normalization is always off — the model is trained on raw std.
         
         Targets: >ml_recall_target% Recall, <ml_fp_rate_target% FP Rate.
         """
@@ -921,12 +921,11 @@ class TestPerformanceMetrics:
         
         # ========================================
         # Initialize ML Detector (no calibration needed)
-        # CV normalization only for chips without gain lock
+        # CV normalization always off (model trained on raw std)
         # ========================================
         detector = MLDetector(
             threshold=5.0,  # Default scaled threshold (0.1-10.0)
             window_size=DETECTOR_DEFAULT_WINDOW_SIZE,
-            use_cv_normalization=use_cv_normalization
         )
         
         print(f"\nML Detector initialized")

@@ -10,7 +10,7 @@ This document provides detailed performance metrics for ESPectre's motion detect
 |-------|--------|--------|-----------|
 | MVS / NBVI | Recall | >95% | Minimize missed detections |
 | MVS / NBVI | FP Rate | <5% | Avoid false alarms |
-| ML | Recall | >94% (temporary) | Temporary validation gate while the residual ESP32 ML recall gap is under investigation |
+| ML | Recall | >95% | All chips use raw std (CV normalization disabled for ML) |
 | ML | FP Rate | <5% | Avoid false alarms |
 
 --
@@ -24,9 +24,9 @@ Configuration used for all test results (unified across chips):
 | Calibration | NBVI | Auto-selects 12 non-consecutive subcarriers |
 | Hampel Filter | ON | Enabled for both MVS and ML (window=7, threshold=5.0 MAD) |
 | Adaptive Threshold | Percentile-based | P95 × 1.1 (`DEFAULT_ADAPTIVE_FACTOR`) |
-| CV Normalization | Per-file | Based on `gain_locked` metadata (`false` => apply CV norm) |
+| CV Normalization | MVS only | Based on `gain_locked` metadata (`false` => apply CV norm for MVS) |
 
-CV normalization is applied per-file based on whether data was collected with AGC gain lock enabled. See Test Data section for details.
+CV normalization is applied per-file for MVS based on whether data was collected with AGC gain lock enabled. ML always uses raw std regardless of gain lock status (the model is trained on raw std).
 
 ---
 
@@ -66,23 +66,23 @@ Results from C++ and Python tests follow the same trends (same algorithms, same 
 |------|-----------|--------|-----------|---------|----------|
 | ESP32-C3 | MVS Default | 96.1% | 99.9% | 0.1% | 98.0% |
 | ESP32-C3 | MVS + NBVI | 96.1% | 100.0% | 0.0% | 98.0% |
-| ESP32-C3 | ML | 99.9% | 100.0% | 0.0% | 99.9% |
+| ESP32-C3 | ML | 100.0% | 100.0% | 0.0% | 100.0% |
 | ESP32-C5 | MVS Default | 99.6% | 100.0% | 0.0% | 99.8% |
 | ESP32-C5 | MVS + NBVI | 99.2% | 100.0% | 0.0% | 99.6% |
 | ESP32-C5 | ML | 100.0% | 100.0% | 0.0% | 100.0% |
 | ESP32-C6 | MVS Default | 99.7% | 100.0% | 0.0% | 99.9% |
 | ESP32-C6 | MVS + NBVI | 99.6% | 100.0% | 0.0% | 99.8% |
-| ESP32-C6 | ML | 98.9% | 100.0% | 0.0% | 99.4% |
+| ESP32-C6 | ML | 99.1% | 100.0% | 0.0% | 99.5% |
 | ESP32-S3 | MVS Default | 99.8% | 98.0% | 2.8% | 98.9% |
 | ESP32-S3 | MVS + NBVI | 96.7% | 100.0% | 0.0% | 98.3% |
-| ESP32-S3 | ML | 99.9% | 100.0% | 0.0% | 99.9% |
+| ESP32-S3 | ML | 99.6% | 100.0% | 0.0% | 99.8% |
 | ESP32 | MVS Default | 99.4% | 98.4% | 2.0% | 98.9% |
 | ESP32 | MVS + NBVI | 97.6% | 100.0% | 0.0% | 98.8% |
-| ESP32 | ML | 94.2% | 98.2% | 2.3% | 96.1% |
+| ESP32 | ML | 99.6% | 99.9% | 0.2% | 99.7% |
 
 **MVS Default**: Uses default subcarriers.
 **MVS + NBVI**: Uses NBVI auto-calibration (production case).
-**ML**: Neural network with grouped session-level blocked CV for model selection, context-aware MVS-guided weights, and Hampel filtering.
+**ML**: Neural network with grouped session-level blocked CV for model selection, context-aware MVS-guided weights, and Hampel filtering. CV normalization is always disabled for ML (raw std only).
 
 ---
 
@@ -154,11 +154,33 @@ For ML architecture details, see [ALGORITHMS.md](micro-espectre/ALGORITHMS.md#ar
 
 ---
 
+## 60-Second Test Recordings (MVS vs ML)
+
+Continuous recordings (~30s idle + ~30s motion) provide a realistic production scenario. These files are not used during training.
+
+Test data: `micro-espectre/data/test/`
+
+| Metric | MVS | ML | Delta |
+|--------|-----|-----|-------|
+| **C3 Recall** | 97.6% | 100.0% | +2.4% |
+| **C3 Precision** | 95.1% | 99.0% | +3.9% |
+| **C3 F1** | 96.3% | **99.5%** | +3.2% |
+| **C5 Recall** | 97.5% | 100.0% | +2.5% |
+| **C5 Precision** | 95.0% | 100.0% | +5.0% |
+| **C5 F1** | 96.2% | **100.0%** | +3.8% |
+| **C6 Recall** | 85.0% | 91.2% | +6.2% |
+| **C6 Precision** | 94.2% | 93.3% | -0.9% |
+| **C6 F1** | 89.4% | **92.2%** | +2.8% |
+
+ML wins on F1 across all three chips. C3 and C5 achieve near-perfect results with dramatically fewer false positives. C6 is the hardest recording; ML has higher recall (+6.2%) but slightly more FP than MVS.
+
+---
+
 ## Result History (ESP32-C6)
 
 | Date | Version | Dataset | Calibration | Algorithm | Recall | Precision | FP Rate | F1-Score |
 |------|---------|---------|-------------|-----------|--------|-----------|---------|----------|
-| 2026-05-04 | v2.8.0 | C6 |  -   | ML + Hampel | 98.9% | 100.0% | 0.0% | 99.4% |
+| 2026-05-17 | v2.8.0 | C6 |  -   | ML + Hampel | 99.1% | 100.0% | 0.0% | 99.5% |
 | 2026-05-04 | v2.8.0 | C6 | NBVI | MVS + Hampel| 99.6% | 100.0% | 0.0% | 99.8% |
 | 2026-03-11 | v2.6.1 | C6 |  -   | ML | 100.0% | 100.0% | 0.0% | 100.0% |
 | 2026-03-11 | v2.6.1 | C6 | NBVI | MVS | 99.3% | 100.0% | 0.0% | 99.7% |

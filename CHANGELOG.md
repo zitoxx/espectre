@@ -24,6 +24,7 @@ All notable changes to this project will be documented in this file.
 
 ### ML and dataset pipeline
 
+- **CV normalization disabled for ML**: MLDetector now always uses raw std (`σ`) for spatial turbulence, regardless of `gain_locked` status. CV normalization (`σ/μ`) remains active only for MVS. This fixes a distribution mismatch where ESP32 (gain_locked=false) produced CV-normalized features (~0.05-0.15) incompatible with the raw std scale (~2-8) used by gain-lock chips, corrupting the StandardScaler and degrading ESP32 ML recall to ~11%. With this fix, ESP32 ML achieves 100% recall / 0.5% FP (F1 99.8%).
 - **Training leakage protections added**: CV moved from `StratifiedKFold` to `StratifiedGroupKFold` (grouped by chip), and internal validation split is explicitly stratified.
 - **Hard-positive mining added**: subtle near-threshold motion samples are up-weighted to improve worst-chip recall.
 - **Feature set refreshed**: `turb_delta` was replaced by `waveform_length` after cross-chip correlation/SHAP validation.

@@ -143,7 +143,7 @@ class MLDetector(IDetector):
     def __init__(self, window_size=75, threshold=ML_DEFAULT_THRESHOLD,
                  enable_lowpass=False, lowpass_cutoff=11.0,
                  enable_hampel=True, hampel_window=7, hampel_threshold=5.0,
-                 use_cv_normalization=False):
+                 **kwargs):
         """
         Initialize ML detector.
         
@@ -155,8 +155,6 @@ class MLDetector(IDetector):
             enable_hampel: Enable Hampel filter (default: True, model trained with Hampel)
             hampel_window: Hampel window size (default: 7)
             hampel_threshold: Hampel threshold in MAD (default: 5.0)
-            use_cv_normalization: Use CV (std/mean) instead of raw std (default: False)
-                                  Set True for chips without gain lock (e.g., ESP32)
         """
         # Use SegmentationContext for turbulence calculation and filtering
         self._context = SegmentationContext(
@@ -168,9 +166,8 @@ class MLDetector(IDetector):
             hampel_window=hampel_window,
             hampel_threshold=hampel_threshold
         )
-        # CV normalization: True for chips without gain lock (ESP32)
-        # False for chips with gain lock (C3, C6, S3) - raw std is more sensitive
-        self._context.use_cv_normalization = use_cv_normalization
+        # ML model is trained on raw std only — CV normalization must stay off
+        self._context.use_cv_normalization = False
         self._threshold = threshold
         self._packet_count = 0
         self._motion_count = 0
@@ -195,7 +192,7 @@ class MLDetector(IDetector):
         """
         self._packet_count += 1
         
-        # Calculate spatial turbulence using instance method (CV-normalized)
+        # Calculate spatial turbulence using instance method (raw std)
         # Also get amplitudes for cross-subcarrier features
         turbulence, amplitudes = self._context.calculate_spatial_turbulence(
             csi_data, selected_subcarriers, return_amplitudes=True

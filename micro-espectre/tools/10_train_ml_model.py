@@ -28,8 +28,7 @@ Usage:
 Configuration:
   - TRAINING_FEATURES: Edit at top of file to change feature set
 
-Note: Files without gain lock use CV normalization (auto-detected from each .npz
-file via the `gain_locked` field).
+Note: CV normalization is always disabled (raw std) to match MLDetector inference.
 
 To compare ML with MVS, use:
     python tools/7_compare_detection_methods.py
@@ -175,6 +174,9 @@ DEFAULT_HIDDEN_LAYERS = [24, 12]
 DEFAULT_FP_WEIGHT = 1.0
 DEFAULT_SCALER_MODE = 'standard'
 DEFAULT_BATCH_SIZE = 32
+# All chips included: MLDetector always uses raw std (CV normalization
+# is disabled in both training and inference), so ESP32 data is compatible
+# with gain-lock chips despite gain_locked=False.
 DEFAULT_EXCLUDED_CHIPS = ()
 DEFAULT_ARCHITECTURE_SWEEP = (
     {'name': 'Legacy (16-8)', 'layers': [16, 8]},
@@ -785,10 +787,8 @@ def extract_features(packets, window_size=SEG_WINDOW_SIZE, subcarriers=None,
         for pkt in file_packets:
             csi_data = pkt['csi_data']
 
-            use_cv_norm = not pkt.get('gain_locked', True)
-            ctx.use_cv_normalization = use_cv_norm
             turb, amps = SegmentationContext.compute_spatial_turbulence(
-                csi_data, subcarriers, use_cv_normalization=use_cv_norm
+                csi_data, subcarriers, use_cv_normalization=False
             )
             ctx.add_turbulence(turb)
             last_amplitudes = amps
@@ -861,9 +861,8 @@ def compute_mvs_guided_sample_weights(packets, tuning_map, window_size=SEG_WINDO
         ctx = SegmentationContext(window_size=window_size, threshold=effective_threshold)
         file_weights = []
         for pkt in file_packets:
-            use_cv_norm = not pkt.get('gain_locked', True)
             turb, _ = SegmentationContext.compute_spatial_turbulence(
-                pkt['csi_data'], subcarriers, use_cv_normalization=use_cv_norm
+                pkt['csi_data'], subcarriers, use_cv_normalization=False
             )
             ctx.add_turbulence(turb)
             ctx.update_state()

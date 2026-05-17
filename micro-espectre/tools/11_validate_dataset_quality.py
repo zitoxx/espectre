@@ -91,10 +91,13 @@ def _extract_amplitudes_matrix(csi_matrix):
 # Wrappers for src/ functions
 # ------------------------------------------------------------------
 
-def _spatial_turbulence_from_amps(amplitudes, band, use_cv_normalization=True):
+def _spatial_turbulence_from_amps(amplitudes, band, use_cv_normalization=False):
     """Compute spatial turbulence from a pre-extracted amplitude list.
 
     Delegates to src/utils.py:calculate_spatial_turbulence().
+    Default is raw std (use_cv_normalization=False) to match MVS production
+    behavior for gain-lock chips. CV normalization is only enabled for files
+    without gain lock.
     """
     return _src_spatial_turbulence(amplitudes, band, use_cv_normalization)
 
@@ -215,7 +218,7 @@ def validate_pair(bl_csi, mv_csi, bl_data, mv_data,
         bl_data: full baseline NpzFile (for metadata)
         mv_data: full movement NpzFile (for metadata)
         subcarriers: list of subcarrier indices for turbulence
-        gain_locked: True → raw_std, False → CV normalization
+        gain_locked: True → raw_std, False → CV normalization (MVS behavior)
 
     Returns:
         tuple: (results, bl_var, mv_var, ratio, gap_s)
@@ -582,7 +585,7 @@ def _generate_report(pair_results, all_results, dataset_info):
     lines.append("- `Gap end->start`: time between baseline end and movement start (negative means overlap)")
     lines.append("- `Subcarriers`: `DEFAULT_SUBCARRIERS` = fixed production default set")
     lines.append("- `Turbulence`: `raw_std` = gain locked (raw standard deviation), "
-                 "`CV` = gain not locked (coefficient of variation)\n")
+                 "`CV` = gain not locked (coefficient of variation, MVS only — ML always uses raw_std)\n")
 
     lines.append("## Results (sorted by chip, then ratio desc)\n")
     lines.append("| Chip | File pair (baseline / movement) | Baseline Var | Movement Var "

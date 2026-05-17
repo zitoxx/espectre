@@ -186,7 +186,7 @@ public:
      * 
      * @param enabled true = CV normalization (std/mean), false = raw std
      */
-    void set_cv_normalization(bool enabled);
+    virtual void set_cv_normalization(bool enabled);
     
     /**
      * Check if CV normalization is enabled

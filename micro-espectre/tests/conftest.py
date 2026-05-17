@@ -59,7 +59,7 @@ def get_ml_fp_rate_target():
 
 def get_ml_recall_target():
     """Match C++ get_ml_recall_target()."""
-    return 94.0
+    return 95.0
 
 
 def format_targets_summary_line():

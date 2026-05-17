@@ -223,6 +223,25 @@ For production artifact promotion, prefer `--seed-search-until-improvement` inst
 
 For full training workflow and dataset preparation, see [ML_DATA_COLLECTION.md](../ML_DATA_COLLECTION.md#5-train-model).
 
+### 11. Dataset Quality Validation (`11_validate_dataset_quality.py`)
+
+Validates CSI datasets for integrity, signal quality, and ML readiness. Runs automated checks on all baseline/movement pairs and optionally generates a structured markdown report.
+
+**Checks performed:**
+- File integrity — NPZ loads, expected keys exist, shapes are valid
+- Signal quality — amplitude range, zero-packet detection
+- Pair validation — baseline vs movement variance ratio, temporal gap
+- ML readiness — label balance, minimum samples, chip diversity
+
+Turbulence mode follows MVS conventions: raw std for gain-locked files, CV normalization for files without gain lock. ML always uses raw std regardless.
+
+```bash
+python 11_validate_dataset_quality.py              # Full validation
+python 11_validate_dataset_quality.py --chip C6    # Validate C6 only
+python 11_validate_dataset_quality.py --report     # Generate markdown report
+python 11_validate_dataset_quality.py --strict     # Fail on warnings too
+```
+
 ---
 
 ## Usage Examples

@@ -26,10 +26,10 @@ This guide covers how to collect and label CSI data for training ML models. This
 - ESP32-C3
 - ESP32-C6
 
-**Works with CV normalization:**
-- ESP32 (original) - Does not support AGC gain lock, but can still be used for training with CV normalization enabled
+**Also supported:**
+- ESP32 (original) - Does not support AGC gain lock, but data is usable for ML training (raw std is used for all chips)
 
-> **Note**: AGC gain lock stabilizes CSI amplitudes during data collection. Without it, amplitudes vary with signal strength. Data collected without gain lock requires CV normalization (`std/mean`) during feature extraction to make detection gain-invariant. The training script handles this automatically using each file's `gain_locked` metadata.
+> **Note**: AGC gain lock stabilizes CSI amplitudes during data collection. Without it, amplitudes vary with signal strength. The ML training pipeline and MLDetector always use raw std (`σ`) for turbulence, regardless of gain lock status. CV normalization (`σ/μ`) is only used by MVS detection.
 
 ---
 
@@ -267,12 +267,13 @@ Some ESP32 chips (original ESP32) or data collection sessions may not have AGC g
 
 ### How It Works
 
-Instead of excluding this data, the training script applies **CV normalization** (`std/mean`) during feature extraction. This normalizes spatial turbulence to be gain-invariant.
+The ML training script uses **raw std** for all chips, including those without gain lock. CV normalization is not applied during ML training or inference — it is only used by the MVS detector.
 
-### When to Use CV Normalization
+### When CV Normalization Is Applied
 
-- **ESP32 (original)**: Does not support AGC gain lock in the CSI driver
-- **Data collected before enabling gain lock**: Some C3 datasets were collected before gain lock was enabled
+CV normalization is only used by the **MVS detector**, not by ML:
+- **ESP32 (original)**: MVS uses CV normalization since AGC gain lock is not supported
+- **Data collected before enabling gain lock**: MVS applies CV normalization for older captures
 - **Future compatibility**: Any data where amplitudes are unreliable
 
 ### Automatic Detection
@@ -378,7 +379,7 @@ The `--fp-weight` parameter multiplies the IDLE class weight during training. Va
 
 This will:
 1. Load all `.npz` files from `data/`
-2. Apply CV normalization to files with `gain_locked: false`
+2. Use raw std for all files (CV normalization disabled for ML)
 3. Apply context-aware MVS-guided sample weighting on the default subcarrier set
 4. Extract 12 features per sliding window
 5. Run grouped cross-validation by paired capture/session, with blocked scoring to reduce overlap optimism
@@ -393,7 +394,7 @@ This will:
 
 Use `--seed <number>` for reproducible training. The seed is saved in the generated weight files.
 
-> **Note**: Files with `gain_locked: false` automatically use CV normalization during feature extraction. Use `--info` to see which files are affected.
+> **Note**: The ML pipeline always uses raw std for turbulence, regardless of `gain_locked` status. CV normalization is only applied by the MVS detector at runtime.
 >
 > **Note**: `--exclude-chip` is an experiment knob for ablations and domain-isolation studies. The default training path keeps all supported chips in the dataset unless you explicitly exclude them.
 >
@@ -463,7 +464,7 @@ Example (HT20, 64 SC):
   - 7 + 128 = 135 bytes
 ```
 
-The `gain_locked` flag indicates whether AGC gain lock was applied during data collection. If not set (0), CV normalization should be applied during feature extraction.
+The `gain_locked` flag indicates whether AGC gain lock was applied during data collection. MVS uses this flag to enable CV normalization when gain is not locked. ML ignores this flag and always uses raw std.
 
 Note: ESPectre uses HT20 mode (64 subcarriers) for consistent performance across all ESP32 variants. Chip type and gain lock status are automatically detected and included in each packet.
 
