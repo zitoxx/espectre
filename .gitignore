@@ -35,6 +35,7 @@ secrets.yaml
 # Editor
 .tmp/
 .vscode/
+.kiro/
 *.swp
 *.swo
 *~
