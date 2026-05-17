@@ -232,7 +232,7 @@ All parameters can be adjusted in the YAML file under the `espectre:` section:
 | `motion_on_hits` | int | 3 | Consecutive evaluated hits required before switching the binary sensor to `MOTION` |
 | `motion_off_hits` | int | 3 | Consecutive evaluated hits required before switching the binary sensor back to `IDLE` |
 | `segmentation_threshold` | string/float | auto | Threshold: `auto`, `min`, or number (0.0-10.0 for both MVS and ML) |
-| `segmentation_window_size` | int | 75 | Moving variance window in packets (10-200) |
+| `segmentation_window_size` | int | 100 | Moving variance window in packets (10-200) |
 | `selected_subcarriers` | list | auto | Fixed subcarriers (omit for auto-calibration) |
 | `lowpass_enabled` | bool | false | Enable low-pass filter for noise reduction (MVS and ML) |
 | `lowpass_cutoff` | float | 11.0 | Low-pass filter cutoff frequency in Hz (5-20) |
@@ -616,16 +616,16 @@ High airtime (>30-50%) causes network congestion, increased latency, and packet 
 
 ## Auto-Calibration (MVS only)
 
-> ⚠️ **CRITICAL**: The room must be **still** during the first 10 seconds after boot. Movement during calibration will result in poor detection accuracy!
+> ⚠️ **CRITICAL**: The room must be **still** during the first ~13 seconds after boot. Movement during calibration will result in poor detection accuracy!
 
 Auto-calibration applies only to MVS mode. ML mode uses fixed subcarriers from pre-trained weights and skips this phase.
 
 ESPectre automatically calibrates in two phases:
 
 1. **Gain Lock** (~3 seconds, 300 packets): Stabilizes AGC/FFT for consistent amplitudes
-2. **NBVI Band Calibration** (~7.5 seconds, 10 × `window_size` packets): Selects optimal 12-subcarrier band and calculates adaptive threshold
+2. **NBVI Band Calibration** (~10 seconds, 10 × `window_size` packets): Selects optimal 12-subcarrier band and calculates adaptive threshold
 
-With default `segmentation_window_size: 75`, the calibration collects 750 packets. If you change the window size, the calibration buffer adjusts automatically.
+With default `segmentation_window_size: 100`, the calibration collects 1000 packets. If you change the window size, the calibration buffer adjusts automatically.
 
 Room must be quiet during the entire ~10 second calibration.
 
@@ -822,7 +822,7 @@ If you still see repeated `Filtered ... wrong SC count` warnings, packets are li
 
 1. **Verify traffic generator is enabled** (`traffic_generator_rate > 0`)
 2. Check WiFi is connected (look for IP address in logs)
-3. Wait for band calibration to complete (~10 seconds after boot)
+3. Wait for band calibration to complete (~13 seconds after boot)
 4. Adjust `segmentation_threshold` (try 0.5-2.0 for more sensitivity)
 
 ### False positives
@@ -835,7 +835,7 @@ If you still see repeated `Filtered ... wrong SC count` warnings, packets are li
 
 Applies only when `detector_algorithm: mvs` (default). The `ml` detector does not use NBVI calibration.
 
-1. Ensure room is quiet during calibration (first 10 seconds after boot)
+1. Ensure room is quiet during calibration (first ~13 seconds after boot)
 2. Check traffic generator is running
 3. Verify WiFi connection is stable
 

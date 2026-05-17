@@ -37,6 +37,7 @@
 #include <cmath>
 #include <fstream>
 #include <cstring>
+#include <regex>
 #include <unordered_map>
 #include <ArduinoJson.h>
 #include "utils.h"
@@ -219,13 +220,20 @@ inline const char* chip_skip_reason(ChipType chip) {
 // These packets are recorded during radio warm-up and inflate calibration thresholds.
 static constexpr int GAIN_LOCK_SKIP = 300;
 
+enum class DatasetMode {
+    StandardPair,
+    LongRecording
+};
+
 static CsiData g_baseline_data;
 static CsiData g_movement_data;
 static std::vector<const int8_t*> g_baseline_ptrs;
 static std::vector<const int8_t*> g_movement_ptrs;
 static bool g_loaded = false;
 static ChipType g_current_chip = ChipType::C6;
+static DatasetMode g_dataset_mode = DatasetMode::StandardPair;
 static bool g_tuning_cache_loaded = false;
+static bool g_long_recording_cache_loaded = false;
 struct ChipDatasetSelection {
     std::string baseline_filename;
     std::string movement_filename;
@@ -236,6 +244,51 @@ struct ChipDatasetSelection {
     bool valid = false;
 };
 static std::array<ChipDatasetSelection, CHIP_COUNT> g_selected_by_chip;
+
+struct LongRecordingSelection {
+    std::string filename;
+    std::string path;
+    std::string collected_at;
+    int motion_start_packet = 0;
+    int num_packets = 0;
+    bool gain_locked = false;
+    bool valid = false;
+};
+static std::array<LongRecordingSelection, CHIP_COUNT> g_long_selected_by_chip;
+
+inline bool extract_motion_start_from_description(const std::string& description, int& out_motion_start) {
+    static const std::regex kMotionStartPattern(
+        "motion\\s+starts\\s+at\\s+packet(?:\\s+index)?(?:\\s+n\\.)?\\s+(\\d+)",
+        std::regex_constants::icase);
+    std::smatch match;
+    if (!std::regex_search(description, match, kMotionStartPattern) || match.size() < 2) {
+        return false;
+    }
+    out_motion_start = std::atoi(match[1].str().c_str());
+    return out_motion_start > 0;
+}
+
+inline CsiData slice_packets(const CsiData& source, int start_idx, int end_idx) {
+    CsiData result;
+    const int clamped_start = std::max(0, start_idx);
+    const int clamped_end = std::min(end_idx, source.num_packets);
+    if (clamped_start >= clamped_end) {
+        result.num_packets = 0;
+        result.packet_size = source.packet_size;
+        result.num_subcarriers = source.num_subcarriers;
+        result.gain_locked = source.gain_locked;
+        result.has_gain_locked = source.has_gain_locked;
+        return result;
+    }
+
+    result.packet_size = source.packet_size;
+    result.num_subcarriers = source.num_subcarriers;
+    result.gain_locked = source.gain_locked;
+    result.has_gain_locked = source.has_gain_locked;
+    result.packets.assign(source.packets.begin() + clamped_start, source.packets.begin() + clamped_end);
+    result.num_packets = static_cast<int>(result.packets.size());
+    return result;
+}
 
 inline bool load_tuning_cache() {
     if (g_tuning_cache_loaded) {
@@ -417,6 +470,89 @@ inline bool load_tuning_cache() {
     return true;
 }
 
+inline bool load_long_recording_cache() {
+    if (g_long_recording_cache_loaded) {
+        return true;
+    }
+
+    const std::string dataset_info_path = "../micro-espectre/data/dataset_info.json";
+    std::ifstream in(dataset_info_path);
+    if (!in.is_open()) {
+        std::fprintf(stderr, "[CSI Test Data] ERROR: Cannot open %s\n", dataset_info_path.c_str());
+        return false;
+    }
+
+    DynamicJsonDocument doc(128 * 1024);
+    auto err = deserializeJson(doc, in);
+    if (err) {
+        std::fprintf(stderr, "[CSI Test Data] ERROR: Failed parsing dataset_info.json: %s\n", err.c_str());
+        return false;
+    }
+
+    for (auto& selected : g_long_selected_by_chip) {
+        selected = LongRecordingSelection{};
+    }
+
+    JsonArray test_entries = doc["files"]["test"].as<JsonArray>();
+    for (JsonObject entry : test_entries) {
+        const char* filename = entry["filename"];
+        const char* chip_text = entry["chip"];
+        const char* collected_at = entry["collected_at"];
+        const char* description = entry["description"];
+        const int subcarriers = entry["subcarriers"] | 0;
+        const int num_packets = entry["num_packets"] | 0;
+        const bool gain_locked = entry["gain_locked"] | false;
+        if (filename == nullptr || chip_text == nullptr || collected_at == nullptr || subcarriers != 64) {
+            continue;
+        }
+
+        ChipType chip{};
+        if (!chip_from_string(chip_text, chip)) {
+            continue;
+        }
+        const int idx = chip_index(chip);
+        if (idx < 0) {
+            continue;
+        }
+
+        int motion_start_packet = 0;
+        if (description == nullptr || !extract_motion_start_from_description(description, motion_start_packet)) {
+            motion_start_packet = num_packets / 2;
+        }
+
+        if (num_packets <= 1 || motion_start_packet <= 0 || motion_start_packet >= num_packets) {
+            continue;
+        }
+
+        LongRecordingSelection candidate{};
+        candidate.filename = filename;
+        candidate.path = std::string("../micro-espectre/data/test/") + filename;
+        candidate.collected_at = collected_at;
+        candidate.motion_start_packet = motion_start_packet;
+        candidate.num_packets = num_packets;
+        candidate.gain_locked = gain_locked;
+        candidate.valid = true;
+
+        LongRecordingSelection& selected = g_long_selected_by_chip[idx];
+        if (!selected.valid || candidate.collected_at > selected.collected_at) {
+            selected = candidate;
+        }
+    }
+
+    for (ChipType chip : get_available_chips()) {
+        const int idx = chip_index(chip);
+        if (idx < 0) {
+            continue;
+        }
+        if (!g_long_selected_by_chip[idx].valid) {
+            continue;
+        }
+    }
+
+    g_long_recording_cache_loaded = true;
+    return true;
+}
+
 inline const char* baseline_file_for_chip(ChipType chip) {
     if (!load_tuning_cache()) {
         return nullptr;
@@ -439,6 +575,39 @@ inline const char* movement_file_for_chip(ChipType chip) {
     return g_selected_by_chip[idx].movement_path.c_str();
 }
 
+inline const char* long_recording_file_for_chip(ChipType chip) {
+    if (!load_long_recording_cache()) {
+        return nullptr;
+    }
+    const int idx = chip_index(chip);
+    if (idx < 0 || !g_long_selected_by_chip[idx].valid) {
+        return nullptr;
+    }
+    return g_long_selected_by_chip[idx].path.c_str();
+}
+
+inline int long_recording_motion_start_for_chip(ChipType chip) {
+    if (!load_long_recording_cache()) {
+        return 0;
+    }
+    const int idx = chip_index(chip);
+    if (idx < 0 || !g_long_selected_by_chip[idx].valid) {
+        return 0;
+    }
+    return g_long_selected_by_chip[idx].motion_start_packet;
+}
+
+inline const char* long_recording_name_for_chip(ChipType chip) {
+    if (!load_long_recording_cache()) {
+        return nullptr;
+    }
+    const int idx = chip_index(chip);
+    if (idx < 0 || !g_long_selected_by_chip[idx].valid) {
+        return nullptr;
+    }
+    return g_long_selected_by_chip[idx].filename.c_str();
+}
+
 /**
  * Remove first N packets from a CsiData struct (in-place).
  */
@@ -455,7 +624,7 @@ inline void skip_packets(CsiData& data, int skip) {
  */
 inline bool load(ChipType chip = ChipType::C6) {
     // If already loaded with same chip, skip
-    if (g_loaded && chip == g_current_chip) return true;
+    if (g_loaded && chip == g_current_chip && g_dataset_mode == DatasetMode::StandardPair) return true;
     
     const char* baseline_file = baseline_file_for_chip(chip);
     const char* movement_file = movement_file_for_chip(chip);
@@ -482,10 +651,52 @@ inline bool load(ChipType chip = ChipType::C6) {
         
         g_loaded = true;
         g_current_chip = chip;
+        g_dataset_mode = DatasetMode::StandardPair;
         return true;
         
     } catch (const std::exception& e) {
         printf("[CSI Test Data] ERROR: Failed to load NPZ files: %s\n", e.what());
+        return false;
+    }
+}
+
+inline bool load_long_recording(ChipType chip = ChipType::C6) {
+    if (g_loaded && chip == g_current_chip && g_dataset_mode == DatasetMode::LongRecording) return true;
+
+    const char* long_recording_file = long_recording_file_for_chip(chip);
+    const int motion_start_packet = long_recording_motion_start_for_chip(chip);
+    if (long_recording_file == nullptr || motion_start_packet <= 0) {
+        std::fprintf(stderr, "[CSI Test Data] ERROR: Missing long recording metadata for chip %s\n", chip_name(chip));
+        return false;
+    }
+
+    try {
+        printf("\n[CSI Test Data] Loading %s long recording dataset...\n", chip_name(chip));
+        printf("[CSI Test Data] Test: %s\n", long_recording_file);
+        CsiData full_data = load_npz(long_recording_file);
+        if (motion_start_packet >= full_data.num_packets) {
+            std::fprintf(stderr,
+                         "[CSI Test Data] ERROR: Invalid motion_start_packet=%d for %s (%d packets)\n",
+                         motion_start_packet, long_recording_file, full_data.num_packets);
+            return false;
+        }
+
+        g_baseline_data = slice_packets(full_data, 0, motion_start_packet);
+        g_movement_data = slice_packets(full_data, motion_start_packet, full_data.num_packets);
+        g_baseline_ptrs = get_packet_pointers(g_baseline_data);
+        g_movement_ptrs = get_packet_pointers(g_movement_data);
+
+        printf("[CSI Test Data] Split at packet %d -> baseline=%d, movement=%d (%d bytes each)\n",
+               motion_start_packet, g_baseline_data.num_packets, g_movement_data.num_packets,
+               g_baseline_data.packet_size);
+
+        g_loaded = true;
+        g_current_chip = chip;
+        g_dataset_mode = DatasetMode::LongRecording;
+        return true;
+
+    } catch (const std::exception& e) {
+        printf("[CSI Test Data] ERROR: Failed to load long NPZ file: %s\n", e.what());
         return false;
     }
 }
@@ -497,6 +708,25 @@ inline bool load(ChipType chip = ChipType::C6) {
 inline bool switch_dataset(ChipType chip) {
     g_loaded = false;  // Force reload
     return load(chip);
+}
+
+inline bool switch_long_recording_dataset(ChipType chip) {
+    g_loaded = false;
+    return load_long_recording(chip);
+}
+
+inline std::vector<ChipType> get_available_long_recording_chips() {
+    std::vector<ChipType> chips;
+    if (!load_long_recording_cache()) {
+        return chips;
+    }
+    for (ChipType chip : get_available_chips()) {
+        const int idx = chip_index(chip);
+        if (idx >= 0 && g_long_selected_by_chip[idx].valid) {
+            chips.push_back(chip);
+        }
+    }
+    return chips;
 }
 
 /**
@@ -519,6 +749,13 @@ inline int num_movement() { return g_movement_data.num_packets; }
 inline int num_subcarriers() { return g_baseline_data.num_subcarriers; }
 inline int packet_size() { return g_baseline_data.packet_size; }
 inline ChipType current_chip() { return g_current_chip; }
+inline bool is_long_recording_mode() { return g_dataset_mode == DatasetMode::LongRecording; }
+inline const char* current_long_recording_name() {
+    return is_long_recording_mode() ? long_recording_name_for_chip(g_current_chip) : nullptr;
+}
+inline int current_motion_start_packet() {
+    return is_long_recording_mode() ? long_recording_motion_start_for_chip(g_current_chip) : 0;
+}
 
 /**
  * Whether the baseline dataset was collected with gain lock enabled.

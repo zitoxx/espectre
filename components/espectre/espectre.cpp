@@ -215,7 +215,7 @@ void ESpectreComponent::on_wifi_connected_() {
   
   // Two-phase calibration:
   // 1. Gain Lock (~3 seconds, 300 packets) - locks AGC/FFT for stable CSI
-  // 2. Baseline Calibration (~7.5 seconds, 750 packets) - calculates normalization scale
+  // 2. Baseline Calibration (~10 seconds, 1000 packets) - calculates normalization scale
   this->csi_manager_.set_gain_lock_callback([this]() {
     auto& gc = this->csi_manager_.get_gain_controller();
     auto mode = gc.get_mode();

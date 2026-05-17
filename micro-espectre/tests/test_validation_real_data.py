@@ -5,7 +5,7 @@ Tests that validate algorithm performance using real CSI data from data/.
 These tests verify that algorithms produce expected results on actual captured data.
 
 Configuration is aligned with C++ tests (test_motion_detection.cpp):
-- window_size = DETECTOR_DEFAULT_WINDOW_SIZE (75)
+- window_size = DETECTOR_DEFAULT_WINDOW_SIZE (100)
 - warmup = DETECTOR_DEFAULT_WINDOW_SIZE (buffer must be full before detection)
 - adaptive_factor = 1.1 (DEFAULT_ADAPTIVE_FACTOR)
 - enable_hampel = true
@@ -785,7 +785,7 @@ class TestPerformanceMetrics:
         - Adaptive threshold from calibration
         - Process ALL packets (no warmup skip)
         - Process baseline first, then movement (continuous context)
-        - Unified window_size (75) and adaptive threshold (P95 × 1.1)
+        - Unified window_size (100) and adaptive threshold (P95 × 1.1)
         - CV normalization for ESP32 (no gain lock)
         
         Targets: >recall_target% Recall, <fp_rate_target% FP Rate.

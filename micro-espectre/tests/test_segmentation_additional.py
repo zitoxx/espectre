@@ -16,6 +16,7 @@ from unittest.mock import MagicMock, patch
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
+from config import SEG_WINDOW_SIZE
 from segmentation import SegmentationContext
 
 
@@ -27,7 +28,7 @@ class TestSegmentationFilterErrors:
         ctx = SegmentationContext(enable_lowpass=True)
         # Should have lowpass filter initialized
         assert ctx.lowpass_filter is not None
-        assert ctx.window_size == 75  # Matches C++ DETECTOR_DEFAULT_WINDOW_SIZE
+        assert ctx.window_size == SEG_WINDOW_SIZE  # Matches C++ DETECTOR_DEFAULT_WINDOW_SIZE
     
     def test_hampel_init_success(self):
         """Test that hampel filter initializes correctly"""

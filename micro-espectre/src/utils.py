@@ -248,7 +248,7 @@ def calculate_spatial_turbulence(magnitudes, band, use_cv_normalization=True):
         return std
 
 
-def calculate_moving_variance(values, window_size=75):
+def calculate_moving_variance(values, window_size=100):
     """
     Calculate moving variance series.
     
@@ -256,7 +256,7 @@ def calculate_moving_variance(values, window_size=75):
     
     Args:
         values: List of numeric values
-        window_size: Size of sliding window (default: 75, matches C++ DETECTOR_DEFAULT_WINDOW_SIZE)
+        window_size: Size of sliding window (default: 100, matches C++ DETECTOR_DEFAULT_WINDOW_SIZE)
     
     Returns:
         list: Moving variance series (length = len(values) - window_size)

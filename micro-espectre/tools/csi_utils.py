@@ -705,7 +705,7 @@ class CSICollector:
         Uses the unified default subcarriers to provide a stable and model-aligned
         readiness indicator before each sample acquisition.
         """
-        window_size = int(getattr(config, 'SEG_WINDOW_SIZE', 75))
+        window_size = int(getattr(config, 'SEG_WINDOW_SIZE', 100))
         if window_size < 10:
             window_size = 10
         elif window_size > 200:

@@ -20,7 +20,7 @@ Configuration used for all test results (unified across chips):
 
 | Parameter | Value | Notes |
 |-----------|-------|-------|
-| Window Size | 75 | `DETECTOR_DEFAULT_WINDOW_SIZE` |
+| Window Size | 100 | `DETECTOR_DEFAULT_WINDOW_SIZE` |
 | Calibration | NBVI | Auto-selects 12 non-consecutive subcarriers |
 | Hampel Filter | ON | Enabled for both MVS and ML (window=7, threshold=5.0 MAD) |
 | Adaptive Threshold | Percentile-based | P95 × 1.1 (`DEFAULT_ADAPTIVE_FACTOR`) |
@@ -52,33 +52,36 @@ source venv/bin/activate
 # C++
 cd test && pio test -f test_motion_detection -v
 
-# Python
-cd micro-espectre && pytest tests/test_validation_real_data.py -v
+# Python (real-data validation)
+cd micro-espectre && pytest tests/test_validation_real_data.py::TestPerformanceMetrics -v
+
+# Python (60-second long recordings, prints summary tables)
+cd micro-espectre && pytest tests/test_validation_long_recordings.py -v -s
 ```
 
 ---
 
 ## Current Results
 
-Results from C++ and Python tests follow the same trends (same algorithms, same data, same methodology), with small per-chip differences due to platform/runtime implementation details.
+Current C++ and Python validation runs match on this dataset/configuration (same algorithms, same data, same methodology), so the table below reflects the shared result.
 
 | Chip | Algorithm | Recall | Precision | FP Rate | F1-Score |
 |------|-----------|--------|-----------|---------|----------|
-| ESP32-C3 | MVS Default | 96.1% | 99.9% | 0.1% | 98.0% |
-| ESP32-C3 | MVS + NBVI | 96.1% | 100.0% | 0.0% | 98.0% |
+| ESP32-C3 | MVS Default | 98.5% | 100.0% | 0.0% | 99.3% |
+| ESP32-C3 | MVS + NBVI | 96.3% | 100.0% | 0.0% | 98.1% |
 | ESP32-C3 | ML | 100.0% | 100.0% | 0.0% | 100.0% |
-| ESP32-C5 | MVS Default | 99.6% | 100.0% | 0.0% | 99.8% |
-| ESP32-C5 | MVS + NBVI | 99.2% | 100.0% | 0.0% | 99.6% |
+| ESP32-C5 | MVS Default | 99.4% | 100.0% | 0.0% | 99.7% |
+| ESP32-C5 | MVS + NBVI | 99.0% | 100.0% | 0.0% | 99.5% |
 | ESP32-C5 | ML | 100.0% | 100.0% | 0.0% | 100.0% |
 | ESP32-C6 | MVS Default | 99.7% | 100.0% | 0.0% | 99.9% |
 | ESP32-C6 | MVS + NBVI | 99.6% | 100.0% | 0.0% | 99.8% |
-| ESP32-C6 | ML | 99.1% | 100.0% | 0.0% | 99.5% |
-| ESP32-S3 | MVS Default | 99.8% | 98.0% | 2.8% | 98.9% |
-| ESP32-S3 | MVS + NBVI | 96.7% | 100.0% | 0.0% | 98.3% |
-| ESP32-S3 | ML | 99.6% | 100.0% | 0.0% | 99.8% |
-| ESP32 | MVS Default | 99.4% | 98.4% | 2.0% | 98.9% |
-| ESP32 | MVS + NBVI | 97.6% | 100.0% | 0.0% | 98.8% |
-| ESP32 | ML | 99.6% | 99.9% | 0.2% | 99.7% |
+| ESP32-C6 | ML | 100.0% | 100.0% | 0.0% | 100.0% |
+| ESP32-S3 | MVS Default | 99.7% | 100.0% | 0.0% | 99.9% |
+| ESP32-S3 | MVS + NBVI | 99.7% | 100.0% | 0.0% | 99.9% |
+| ESP32-S3 | ML | 100.0% | 100.0% | 0.0% | 100.0% |
+| ESP32 | MVS Default | 99.4% | 100.0% | 0.0% | 99.7% |
+| ESP32 | MVS + NBVI | 99.4% | 100.0% | 0.0% | 99.7% |
+| ESP32 | ML | 100.0% | 100.0% | 0.0% | 100.0% |
 
 **MVS Default**: Uses default subcarriers.
 **MVS + NBVI**: Uses NBVI auto-calibration (production case).
@@ -148,31 +151,34 @@ The worst-case path is ML on ESP32-C3 (~3.5 ms peak, ~35% CPU), which still leav
 
 **MVS**: Extracts a single feature (spatial turbulence) and its moving variance.
 
-**ML**: Extracts 12 statistical features from sliding window, then runs MLP inference (12 → 16 → 8 → 1 = 328 MACs). 
+**ML**: Extracts 12 statistical features from sliding window, then runs MLP inference (12 → 24 → 12 → 1 = 588 MACs).
 The MLP itself is lightweight; most time is spent on feature extraction. 
 For ML architecture details, see [ALGORITHMS.md](micro-espectre/ALGORITHMS.md#architecture).
 
 ---
 
-## 60-Second Test Recordings (MVS vs ML)
+## 60-Second Test Recordings (Current)
 
-Continuous recordings (~30s idle + ~30s motion) provide a realistic production scenario. These files are not used during training.
+Continuous recordings (~30s idle + ~30s motion) provide a realistic production-style scenario. These files are not used during training.
 
 Test data: `micro-espectre/data/test/`
+Source of truth: `micro-espectre/tests/test_validation_long_recordings.py`
 
-| Metric | MVS | ML | Delta |
-|--------|-----|-----|-------|
-| **C3 Recall** | 97.6% | 100.0% | +2.4% |
-| **C3 Precision** | 95.1% | 99.0% | +3.9% |
-| **C3 F1** | 96.3% | **99.5%** | +3.2% |
-| **C5 Recall** | 97.5% | 100.0% | +2.5% |
-| **C5 Precision** | 95.0% | 100.0% | +5.0% |
-| **C5 F1** | 96.2% | **100.0%** | +3.8% |
-| **C6 Recall** | 85.0% | 91.2% | +6.2% |
-| **C6 Precision** | 94.2% | 93.3% | -0.9% |
-| **C6 F1** | 89.4% | **92.2%** | +2.8% |
+Methodology:
+- `MVS + NBVI`: run NBVI calibration on the idle segment, then evaluate the full recording with adaptive threshold and Hampel enabled
+- `ML`: use exported production weights with threshold `5.0` and Hampel enabled
+- Both paths skip the first `100` packets of each segment as warmup when scoring packet-level metrics
 
-ML wins on F1 across all three chips. C3 and C5 achieve near-perfect results with dramatically fewer false positives. C6 is the hardest recording; ML has higher recall (+6.2%) but slightly more FP than MVS.
+| Chip | Algorithm | Recall | Precision | FP Rate | F1-Score |
+|------|-----------|--------|-----------|---------|----------|
+| C3 | MVS + NBVI | 100.0% | 100.0% | 0.0% | 100.0% |
+| C3 | ML | 100.0% | 100.0% | 0.0% | 100.0% |
+| C5 | MVS + NBVI | 100.0% | 91.1% | 7.9% | 95.3% |
+| C5 | ML | 100.0% | 91.1% | 7.9% | 95.3% |
+| C6 | MVS + NBVI | 100.0% | 81.4% | 21.8% | 89.7% |
+| C6 | ML | 95.8% | 94.1% | 5.7% | 94.9% |
+
+These long recordings currently highlight that packet-level real-data validation and long continuous recordings stress the system differently. In this small long-recording set, ML remains more robust than MVS on the hardest capture (`C6`), but both `C5` and `C6` still exceed the `<5%` FP target for continuous recordings. `C3` remains saturated for both methods.
 
 ---
 
@@ -180,7 +186,7 @@ ML wins on F1 across all three chips. C3 and C5 achieve near-perfect results wit
 
 | Date | Version | Dataset | Calibration | Algorithm | Recall | Precision | FP Rate | F1-Score |
 |------|---------|---------|-------------|-----------|--------|-----------|---------|----------|
-| 2026-05-17 | v2.8.0 | C6 |  -   | ML + Hampel | 99.1% | 100.0% | 0.0% | 99.5% |
+| 2026-05-17 | v2.8.0 | C6 |  -   | ML + Hampel | 100.0% | 100.0% | 0.0% | 100.0% |
 | 2026-05-04 | v2.8.0 | C6 | NBVI | MVS + Hampel| 99.6% | 100.0% | 0.0% | 99.8% |
 | 2026-03-11 | v2.6.1 | C6 |  -   | ML | 100.0% | 100.0% | 0.0% | 100.0% |
 | 2026-03-11 | v2.6.1 | C6 | NBVI | MVS | 99.3% | 100.0% | 0.0% | 99.7% |

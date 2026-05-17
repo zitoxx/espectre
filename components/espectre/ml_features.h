@@ -4,7 +4,7 @@
  * Extracts 12 non-redundant features from CSI data for ML-based motion
  * detection. Port of micro-espectre/src/features.py to C++.
  * 
- * All 12 features are computed from the turbulence buffer (75 samples).
+ * All 12 features are computed from the turbulence buffer (100 samples).
  * 
  * Features (in order):
  *  0. turb_mean      - Mean of turbulence buffer
@@ -243,7 +243,7 @@ inline float calc_waveform_length(const float* values, uint16_t count) {
 /**
  * Extract all 12 ML features from turbulence buffer and amplitudes.
  * 
- * All 12 features are computed from the turbulence buffer (typically 75 samples).
+ * All 12 features are computed from the turbulence buffer (typically 100 samples).
  * 
  * @param turb_buffer Turbulence buffer
  * @param turb_count Number of valid values in turbulence buffer

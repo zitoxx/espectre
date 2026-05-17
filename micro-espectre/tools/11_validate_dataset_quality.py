@@ -105,7 +105,7 @@ def _spatial_turbulence_from_amps(amplitudes, band, use_cv_normalization=False):
 def _moving_variance(values, window_size=None):
     """Compute moving variance via src/utils.py.
 
-    Uses SEG_WINDOW_SIZE from src/config.py as default (75).
+    Uses SEG_WINDOW_SIZE from src/config.py as default (100).
     """
     if window_size is None:
         window_size = SEG_WINDOW_SIZE
@@ -316,7 +316,7 @@ def validate_ml_readiness(dataset_info):
                 f"Imbalanced: {bl_ratio:.1%} baseline, {1-bl_ratio:.1%} movement", bl_ratio))
 
     min_windows = 1000
-    estimated_windows = max(0, bl_packets - 75) + max(0, mv_packets - 75)
+    estimated_windows = max(0, bl_packets - 100) + max(0, mv_packets - 100)
     if estimated_windows < min_windows:
         results.append(ValidationResult("sample_count", "WARN",
             f"Low sample count: ~{estimated_windows} windows (target: {min_windows}+)", estimated_windows))

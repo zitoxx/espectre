@@ -399,7 +399,7 @@ DETECTION_ALGORITHM = "mvs"   # "mvs" (default) or "ml"
 
 | Algorithm | Method | Calibration | Boot Time |
 |-----------|--------|-------------|-----------|
-| **MVS** (default) | Moving Variance Segmentation of Turbulence | Subcarriers + Threshold | ~10s |
+| **MVS** (default) | Moving Variance Segmentation of Turbulence | Subcarriers + Threshold | ~13s |
 | **ML** | Neural Network (12 features → MLP) | **None** (fixed subcarriers) | **~3s** |
 
 ### 3. Calibration Algorithm (MVS only)
@@ -418,7 +418,7 @@ CALIBRATION_ALGORITHM = "nbvi"  # NBVI is the sole calibration algorithm
 
 ```python
 SEG_THRESHOLD = "auto"     # "auto" (adaptive), "min" (max baseline), or 0.0-10.0
-SEG_WINDOW_SIZE = 75       # Moving variance window (10-200 packets)
+SEG_WINDOW_SIZE = 100      # Moving variance window (10-200 packets)
 PUBLISH_INTERVAL = 100     # Periodic MQTT/log publish cadence
 EVALUATION_INTERVAL = 25   # Detector evaluation cadence (independent from publish)
 MOTION_ON_HITS = 3         # Consecutive evaluated MOTION hits required to enter MOTION
@@ -484,7 +484,7 @@ Micro-ESPectre implements automatic subcarrier selection using the **NBVI** (Nor
 Both algorithms achieve high performance (>90% recall, <15% FP rate) with **zero manual configuration**.
 
 > ⚠️ **IMPORTANT**: Keep the room **quiet and still** after device boot during calibration:
-> - **MVS**: ~10 seconds (gain lock + band calibration)
+> - **MVS**: ~13 seconds (gain lock + band calibration)
 > - **ML**: ~3 seconds (gain lock only, no band calibration needed)
 
 For complete algorithm documentation, see [ALGORITHMS.md](ALGORITHMS.md#subcarrier-selection-nbvi).
@@ -499,8 +499,8 @@ The ML detector (`DETECTION_ALGORITHM = "ml"`) is a compact MLP trained on real 
 
 | Aspect | Details |
 |--------|---------|
-| Architecture | MLP (12 → 16 → 8 → 1) |
-| Input | 12 features from 75-packet window |
+| Architecture | MLP (12 → 24 → 12 → 1) |
+| Input | 12 features from 100-packet window |
 | Output | Probability (0.0 - 1.0), threshold at 0.5 |
 | Filters | Supports low-pass and Hampel filters (same as MVS) |
 | Performance | See [PERFORMANCE.md](../PERFORMANCE.md) for per-chip results |
@@ -723,7 +723,7 @@ Publish JSON commands to `home/espectre/node1/cmd`:
     "algorithm": "MVS",
     "calibrator": "nbvi",
     "threshold": 1.0,
-    "window_size": 75,
+    "window_size": 100,
     "publish_interval": 100,
     "evaluation_interval": 25,
     "motion_on_hits": 3,

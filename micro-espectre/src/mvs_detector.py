@@ -30,7 +30,7 @@ class MVSDetector(IDetector):
     """
     
     def __init__(self,
-                 window_size=75,
+                 window_size=100,
                  threshold=1.0,
                  enable_lowpass=False,
                  lowpass_cutoff=11.0,
@@ -41,7 +41,7 @@ class MVSDetector(IDetector):
         Initialize MVS detector.
         
         Args:
-            window_size: Moving variance window size (default: 75, matches C++ DETECTOR_DEFAULT_WINDOW_SIZE)
+            window_size: Moving variance window size (default: 100, matches C++ DETECTOR_DEFAULT_WINDOW_SIZE)
             threshold: Motion detection threshold (default: 1.0)
             enable_lowpass: Enable low-pass filter (default: False)
             lowpass_cutoff: Low-pass cutoff frequency Hz (default: 11.0)

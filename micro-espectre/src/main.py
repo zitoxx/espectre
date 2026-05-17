@@ -12,7 +12,7 @@ import time
 import gc
 import os
 from src.mvs_detector import MVSDetector
-from src.ml_detector import MLDetector
+from src.ml_detector import MLDetector, ML_DEFAULT_THRESHOLD, ML_METRIC_SCALE
 from src.mqtt.handler import MQTTHandler
 from src.traffic_generator import TrafficGenerator
 from src.runtime_policy import RuntimeMotionPolicy
@@ -158,17 +158,18 @@ def format_progress_bar(score, threshold, width=20, is_probability=False):
     """Format progress bar for console output.
     
     For MVS: score = metric/threshold, threshold_pos at 75% (15/20)
-    For ML: score = probability, threshold_pos at threshold (e.g., 50% for 0.5)
+    For ML: score/threshold are on the detector's 0-10 scale.
     """
     if is_probability:
-        # ML mode: threshold is a probability (0-1), show it at its actual position
-        threshold_pos = int(threshold * width)
-        filled = int(score * width)
+        # ML mode: threshold and score are already scaled to 0-10.
+        threshold_pos = int((threshold / ML_METRIC_SCALE) * width)
+        filled = int((score / ML_METRIC_SCALE) * width)
     else:
         # MVS mode: score is already normalized (metric/threshold)
         threshold_pos = 15  # 75% position
         filled = int(score * threshold_pos)
     
+    threshold_pos = max(0, min(threshold_pos, width - 1))
     filled = max(0, min(filled, width))
     
     bar = '['
@@ -181,7 +182,10 @@ def format_progress_bar(score, threshold, width=20, is_probability=False):
             bar += '░'
     bar += ']'
     
-    percent = int(score * 100)
+    if is_probability:
+        percent = int((score / threshold) * 100) if threshold > 0 else 0
+    else:
+        percent = int(score * 100)
     return f"{bar} {percent}%"
 
 
@@ -333,7 +337,7 @@ def run_band_calibration(wlan, detector, traffic_gen, chip_type=None):
         print('='*60)
         print('ML Quick Boot Complete!')
         print(f'   Subcarriers: {config.SELECTED_SUBCARRIERS}')
-        print(f'   Threshold: 0.5 (probability)')
+        print(f'   Threshold: {detector.get_threshold():.1f} (scaled 0-10 score)')
         print(f'   Total boot time: ~3 seconds (gain lock only)')
         print('='*60)
         print('')
@@ -471,7 +475,7 @@ def run_band_calibration(wlan, detector, traffic_gen, chip_type=None):
         config.SELECTED_SUBCARRIERS = selected_band
         
         if is_ml:
-            threshold_source = "fixed (0.5)"
+            threshold_source = f"fixed ({detector.get_threshold():.1f})"
             success = True
             
             print('')
@@ -564,7 +568,7 @@ def main():
         print(f'Detection algorithm: ML (Neural Network)')
         detector = MLDetector(
             window_size=config.SEG_WINDOW_SIZE,
-            threshold=0.5,  # Probability threshold
+            threshold=ML_DEFAULT_THRESHOLD,
             enable_lowpass=config.ENABLE_LOWPASS_FILTER,
             lowpass_cutoff=config.LOWPASS_CUTOFF,
             enable_hampel=config.ENABLE_HAMPEL_FILTER,
@@ -747,9 +751,9 @@ def main():
                         motion_metric = metrics.get('moving_variance', metrics.get('jitter', metrics.get('probability', 0)))
                         threshold = metrics['threshold']
                         is_ml = 'probability' in metrics
-                        # For ML, probability and threshold are both 0-1, so progress = probability
+                        # For ML, motion_metric and threshold are both on the detector's 0-10 scale.
                         if is_ml:
-                            progress = motion_metric  # probability is already 0-1
+                            progress = motion_metric
                         else:
                             progress = motion_metric / threshold if threshold > 0 else 0
                         progress_bar = format_progress_bar(progress, threshold, is_probability=is_ml)

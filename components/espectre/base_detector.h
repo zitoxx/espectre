@@ -31,7 +31,7 @@ enum class MotionState {
 // DETECTOR CONSTANTS
 // ============================================================================
 
-constexpr uint16_t DETECTOR_DEFAULT_WINDOW_SIZE = 75;
+constexpr uint16_t DETECTOR_DEFAULT_WINDOW_SIZE = 100;
 constexpr uint16_t DETECTOR_MIN_WINDOW_SIZE = 10;
 constexpr uint16_t DETECTOR_MAX_WINDOW_SIZE = 200;
 

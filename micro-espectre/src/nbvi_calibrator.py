@@ -699,6 +699,7 @@ class NBVICalibrator:
             return search_band, mv_values
         
         HINT_FP_TOLERANCE = self.hint_fp_tolerance
+        FP_COMPARE_EPSILON = 1e-6
         use_hint_band = False
         hint_fp_rate = 1.0
         hint_mv_values = []
@@ -707,17 +708,19 @@ class NBVICalibrator:
 
             best_fp_acceptable = best_fp_rate <= 0.05
             hint_fp_acceptable = hint_fp_rate <= 0.05
+            acceptable_best_cmp = best_fp_rate + HINT_FP_TOLERANCE + FP_COMPARE_EPSILON
+            strict_best_cmp = best_fp_rate + HINT_FP_TOLERANCE
             if best_fp_acceptable and hint_fp_acceptable:
-                if hint_fp_rate <= (best_fp_rate + HINT_FP_TOLERANCE):
+                if hint_fp_rate <= acceptable_best_cmp:
                     use_hint_band = True
                 else:
                     print(f"NBVI: Keeping candidate band with FP {best_fp_rate*100:.1f}% "
                           f"vs hint {hint_fp_rate*100:.1f}% (acceptable target <5.0%)")
             elif not best_fp_acceptable:
                 if self.prefer_hint_on_tie:
-                    hint_fp_ok = hint_fp_rate <= (best_fp_rate + HINT_FP_TOLERANCE)
+                    hint_fp_ok = hint_fp_rate <= acceptable_best_cmp
                 else:
-                    hint_fp_ok = hint_fp_rate < (best_fp_rate + HINT_FP_TOLERANCE)
+                    hint_fp_ok = (hint_fp_rate + FP_COMPARE_EPSILON) < strict_best_cmp
                 
                 if hint_fp_ok:
                     use_hint_band = True

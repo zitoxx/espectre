@@ -24,7 +24,7 @@ TOOLS_PATH = Path(__file__).parent.parent / 'tools'
 sys.path.insert(0, str(TOOLS_PATH))
 sys.path.insert(0, str(SRC_PATH))
 
-from config import DEFAULT_SUBCARRIERS, HAMPEL_WINDOW, HAMPEL_THRESHOLD
+from config import DEFAULT_SUBCARRIERS, SEG_WINDOW_SIZE, HAMPEL_WINDOW, HAMPEL_THRESHOLD
 
 # Data directory (shared between tests and tools)
 DATA_DIR = Path(__file__).parent.parent / 'data'
@@ -294,7 +294,7 @@ def pairing_mode(request):
 def segmentation_config():
     """Default segmentation configuration - matches C++ DETECTOR_DEFAULT_WINDOW_SIZE"""
     return {
-        'window_size': 75,  # DETECTOR_DEFAULT_WINDOW_SIZE
+        'window_size': SEG_WINDOW_SIZE,  # DETECTOR_DEFAULT_WINDOW_SIZE
         'threshold': 1.0,
         'enable_hampel': True,
         'hampel_window': HAMPEL_WINDOW,

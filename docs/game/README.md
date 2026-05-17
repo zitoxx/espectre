@@ -126,7 +126,7 @@ Sent over BLE notify when requested and at client connect.
 proto_version=1
 chip=esp32c6
 threshold=1.20 (auto)
-window=75
+window=100
 END
 ```
 
@@ -193,7 +193,7 @@ Sysinfo notification sequence:
 proto_version=1
 chip=esp32c6
 threshold=1.20 (auto)
-window=75
+window=100
 END
 ```
 

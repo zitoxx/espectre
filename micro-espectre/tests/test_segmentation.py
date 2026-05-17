@@ -10,6 +10,7 @@ License: GPLv3
 import pytest
 import math
 import numpy as np
+from config import SEG_WINDOW_SIZE
 from segmentation import SegmentationContext
 
 
@@ -19,7 +20,7 @@ class TestSegmentationContextInit:
     def test_default_parameters(self):
         """Test default parameters (matches C++ DETECTOR_DEFAULT_WINDOW_SIZE)"""
         ctx = SegmentationContext()
-        assert ctx.window_size == 75
+        assert ctx.window_size == SEG_WINDOW_SIZE
         assert ctx.threshold == 1.0
         assert ctx.state == SegmentationContext.STATE_IDLE
         assert ctx.buffer_count == 0
@@ -36,8 +37,8 @@ class TestSegmentationContextInit:
     
     def test_buffer_pre_allocation(self):
         """Test that turbulence buffer is pre-allocated"""
-        ctx = SegmentationContext(window_size=75)
-        assert len(ctx.turbulence_buffer) == 75
+        ctx = SegmentationContext(window_size=SEG_WINDOW_SIZE)
+        assert len(ctx.turbulence_buffer) == SEG_WINDOW_SIZE
     
     def test_hampel_enabled_by_default(self):
         """Test that Hampel filter is enabled by default"""

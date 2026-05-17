@@ -97,7 +97,21 @@ bool MLDetector::set_threshold(float threshold) {
 // ============================================================================
 
 void MLDetector::extract_features(float* features_out) {
-    extract_ml_features(turbulence_buffer_, buffer_count_,
+    if (buffer_count_ < window_size_) {
+        extract_ml_features(turbulence_buffer_, buffer_count_,
+                            amplitude_buffer_, num_amplitudes_,
+                            features_out);
+        return;
+    }
+
+    // Reconstruct chronological order from the circular buffer.
+    // buffer_index_ points to the next write slot, i.e. the oldest sample.
+    float ordered_buffer[DETECTOR_MAX_WINDOW_SIZE];
+    for (uint16_t i = 0; i < buffer_count_; i++) {
+        ordered_buffer[i] = turbulence_buffer_[(buffer_index_ + i) % window_size_];
+    }
+
+    extract_ml_features(ordered_buffer, buffer_count_,
                         amplitude_buffer_, num_amplitudes_,
                         features_out);
 }

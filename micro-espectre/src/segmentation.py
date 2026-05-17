@@ -37,7 +37,7 @@ class SegmentationContext:
     STATE_MOTION = MotionState.MOTION
     
     def __init__(self, 
-                 window_size=75,
+                 window_size=100,
                  threshold=1.0,
                  enable_lowpass=False,
                  lowpass_cutoff=11.0,
@@ -48,7 +48,7 @@ class SegmentationContext:
         Initialize segmentation context
         
         Args:
-            window_size: Moving variance window size (default: 75, matches C++ DETECTOR_DEFAULT_WINDOW_SIZE)
+            window_size: Moving variance window size (default: 100, matches C++ DETECTOR_DEFAULT_WINDOW_SIZE)
             threshold: Motion detection threshold value (default: 1.0)
                        Can be set dynamically via set_adaptive_threshold() after calibration
             enable_lowpass: Enable low-pass filter for noise reduction (default: False)

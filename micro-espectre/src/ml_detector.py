@@ -141,7 +141,7 @@ class MLDetector(IDetector):
     5. Compare probability to threshold for state decision
     """
     
-    def __init__(self, window_size=75, threshold=ML_DEFAULT_THRESHOLD,
+    def __init__(self, window_size=100, threshold=ML_DEFAULT_THRESHOLD,
                  enable_lowpass=False, lowpass_cutoff=11.0,
                  enable_hampel=True, hampel_window=7, hampel_threshold=5.0,
                  **kwargs):
@@ -149,7 +149,7 @@ class MLDetector(IDetector):
         Initialize ML detector.
         
         Args:
-            window_size: Feature extraction window size (default: 75, matches C++ DETECTOR_DEFAULT_WINDOW_SIZE)
+            window_size: Feature extraction window size (default: 100, matches C++ DETECTOR_DEFAULT_WINDOW_SIZE)
             threshold: Motion detection threshold (default: 5.0, range 0.0-10.0)
             enable_lowpass: Enable low-pass filter (default: False)
             lowpass_cutoff: Low-pass cutoff frequency Hz (default: 11.0)
@@ -290,6 +290,17 @@ class MLDetector(IDetector):
             self._threshold = threshold
             return True
         return False
+
+    def set_cv_normalization(self, enabled):
+        """
+        Ignore CV normalization requests.
+
+        The exported ML model is trained on raw standard deviation, so the
+        runtime must keep CV normalization disabled to stay aligned with the
+        C++ implementation and the training pipeline.
+        """
+        del enabled
+        self._context.use_cv_normalization = False
     
     def is_ready(self):
         """Check if buffer is full."""

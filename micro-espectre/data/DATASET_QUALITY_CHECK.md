@@ -24,26 +24,26 @@ Computed metrics:
 
 | Chip | File pair (baseline / movement) | Baseline Var | Movement Var | Ratio | Gap | Subcarriers | Turbulence | Status |
 |---|---|---:|---:|---:|---:|---|---|---|
-| C3 | `baseline_c3_64sc_20260503_131521.npz` / `movement_c3_64sc_20260503_131538.npz` | 0.15 | 6.12 | 41.82x | 7.5s | DEFAULT_SUBCARRIERS | raw_std | PASS |
-| C3 | `baseline_c3_64sc_20260329_130411.npz` / `movement_c3_64sc_20260329_130429.npz` | 0.23 | 3.14 | 13.68x | 8.3s | DEFAULT_SUBCARRIERS | raw_std | PASS |
-| C3 | `baseline_c3_64sc_20260329_130303.npz` / `movement_c3_64sc_20260329_130321.npz` | 0.34 | 3.04 | 8.89x | 7.5s | DEFAULT_SUBCARRIERS | raw_std | PASS |
-| C3 | `baseline_c3_64sc_20260503_120837.npz` / `movement_c3_64sc_20260503_120856.npz` | 0.43 | 1.62 | 3.79x | 9.5s | DEFAULT_SUBCARRIERS | raw_std | PASS |
-| C5 | `baseline_c5_64sc_20260329_124440.npz` / `movement_c5_64sc_20260329_124504.npz` | 0.06 | 1.88 | 32.95x | 14.0s | DEFAULT_SUBCARRIERS | raw_std | PASS |
-| C5 | `baseline_c5_64sc_20260310_233856.npz` / `movement_c5_64sc_20260310_233928.npz` | 0.08 | 2.63 | 31.60x | 21.9s | DEFAULT_SUBCARRIERS | raw_std | PASS |
-| C5 | `baseline_c5_64sc_20260503_122543.npz` / `movement_c5_64sc_20260503_122602.npz` | 0.11 | 2.61 | 24.34x | 9.5s | DEFAULT_SUBCARRIERS | raw_std | PASS |
-| C5 | `baseline_c5_64sc_20260503_132216.npz` / `movement_c5_64sc_20260503_132236.npz` | 0.16 | 2.73 | 17.05x | 9.4s | DEFAULT_SUBCARRIERS | raw_std | PASS |
-| C6 | `baseline_c6_64sc_20260310_234819.npz` / `movement_c6_64sc_20260310_234839.npz` | 0.05 | 1.23 | 22.92x | 10.2s | DEFAULT_SUBCARRIERS | raw_std | PASS |
-| C6 | `baseline_c6_64sc_20260503_121755.npz` / `movement_c6_64sc_20260503_121812.npz` | 0.04 | 0.65 | 15.25x | 6.9s | DEFAULT_SUBCARRIERS | raw_std | PASS |
-| C6 | `baseline_c6_64sc_20260503_131805.npz` / `movement_c6_64sc_20260503_131826.npz` | 0.14 | 0.54 | 3.79x | 11.3s | DEFAULT_SUBCARRIERS | raw_std | PASS |
-| C6 | `baseline_c6_64sc_20260310_230414.npz` / `movement_c6_64sc_20260310_230434.npz` | 0.40 | 1.46 | 3.68x | 9.6s | DEFAULT_SUBCARRIERS | raw_std | PASS |
-| ESP32 | `baseline_esp32_64sc_20260214_183059.npz` / `movement_esp32_64sc_20260214_183141.npz` | 1.77e-04 | 6.89e-03 | 38.95x | 32.0s | DEFAULT_SUBCARRIERS | CV | PASS |
-| ESP32 | `baseline_esp32_64sc_20260503_132351.npz` / `movement_esp32_64sc_20260503_132411.npz` | 7.52e-05 | 2.01e-03 | 26.74x | 10.2s | DEFAULT_SUBCARRIERS | CV | PASS |
-| ESP32 | `baseline_esp32_64sc_20260310_232100.npz` / `movement_esp32_64sc_20260310_232137.npz` | 7.91e-05 | 1.15e-03 | 14.48x | 27.1s | DEFAULT_SUBCARRIERS | CV | PASS |
-| ESP32 | `baseline_esp32_64sc_20260503_123427.npz` / `movement_esp32_64sc_20260503_123451.npz` | 1.76e-04 | 1.22e-03 | 6.96x | 13.4s | DEFAULT_SUBCARRIERS | CV | PASS |
-| S3 | `baseline_s3_64sc_20260329_125557.npz` / `movement_s3_64sc_20260329_125616.npz` | 0.08 | 1.24 | 14.80x | 8.7s | DEFAULT_SUBCARRIERS | raw_std | PASS |
-| S3 | `baseline_s3_64sc_20260117_222606.npz` / `movement_s3_64sc_20260117_222626.npz` | 0.77 | 7.64 | 9.88x | 10.2s | DEFAULT_SUBCARRIERS | raw_std | PASS |
-| S3 | `baseline_s3_64sc_20260503_122221.npz` / `movement_s3_64sc_20260503_122250.npz` | 0.19 | 1.51 | 7.78x | 18.9s | DEFAULT_SUBCARRIERS | raw_std | PASS |
-| S3 | `baseline_s3_64sc_20260503_132012.npz` / `movement_s3_64sc_20260503_132053.npz` | 0.89 | 4.43 | 4.98x | 31.1s | DEFAULT_SUBCARRIERS | raw_std | PASS |
+| C3 | `baseline_c3_64sc_20260503_131521.npz` / `movement_c3_64sc_20260503_131538.npz` | 0.15 | 6.57 | 44.47x | 7.5s | DEFAULT_SUBCARRIERS | raw_std | PASS |
+| C3 | `baseline_c3_64sc_20260329_130411.npz` / `movement_c3_64sc_20260329_130429.npz` | 0.23 | 3.32 | 14.22x | 8.3s | DEFAULT_SUBCARRIERS | raw_std | PASS |
+| C3 | `baseline_c3_64sc_20260329_130303.npz` / `movement_c3_64sc_20260329_130321.npz` | 0.34 | 3.20 | 9.33x | 7.5s | DEFAULT_SUBCARRIERS | raw_std | PASS |
+| C3 | `baseline_c3_64sc_20260503_120837.npz` / `movement_c3_64sc_20260503_120856.npz` | 0.43 | 1.67 | 3.89x | 9.5s | DEFAULT_SUBCARRIERS | raw_std | PASS |
+| C5 | `baseline_c5_64sc_20260329_124440.npz` / `movement_c5_64sc_20260329_124504.npz` | 0.06 | 2.12 | 37.42x | 14.0s | DEFAULT_SUBCARRIERS | raw_std | PASS |
+| C5 | `baseline_c5_64sc_20260310_233856.npz` / `movement_c5_64sc_20260310_233928.npz` | 0.08 | 2.75 | 32.45x | 21.9s | DEFAULT_SUBCARRIERS | raw_std | PASS |
+| C5 | `baseline_c5_64sc_20260503_122543.npz` / `movement_c5_64sc_20260503_122602.npz` | 0.12 | 2.74 | 23.07x | 9.5s | DEFAULT_SUBCARRIERS | raw_std | PASS |
+| C5 | `baseline_c5_64sc_20260503_132216.npz` / `movement_c5_64sc_20260503_132236.npz` | 0.16 | 3.25 | 20.17x | 9.4s | DEFAULT_SUBCARRIERS | raw_std | PASS |
+| C6 | `baseline_c6_64sc_20260310_234819.npz` / `movement_c6_64sc_20260310_234839.npz` | 0.05 | 1.29 | 23.69x | 10.2s | DEFAULT_SUBCARRIERS | raw_std | PASS |
+| C6 | `baseline_c6_64sc_20260503_121755.npz` / `movement_c6_64sc_20260503_121812.npz` | 0.04 | 0.66 | 15.32x | 6.9s | DEFAULT_SUBCARRIERS | raw_std | PASS |
+| C6 | `baseline_c6_64sc_20260503_131805.npz` / `movement_c6_64sc_20260503_131826.npz` | 0.14 | 0.56 | 3.99x | 11.3s | DEFAULT_SUBCARRIERS | raw_std | PASS |
+| C6 | `baseline_c6_64sc_20260310_230414.npz` / `movement_c6_64sc_20260310_230434.npz` | 0.40 | 1.54 | 3.88x | 9.6s | DEFAULT_SUBCARRIERS | raw_std | PASS |
+| ESP32 | `baseline_esp32_64sc_20260214_183059.npz` / `movement_esp32_64sc_20260214_183141.npz` | 1.76e-04 | 7.15e-03 | 40.56x | 32.0s | DEFAULT_SUBCARRIERS | CV | PASS |
+| ESP32 | `baseline_esp32_64sc_20260503_132351.npz` / `movement_esp32_64sc_20260503_132411.npz` | 7.42e-05 | 2.09e-03 | 28.15x | 10.2s | DEFAULT_SUBCARRIERS | CV | PASS |
+| ESP32 | `baseline_esp32_64sc_20260310_232100.npz` / `movement_esp32_64sc_20260310_232137.npz` | 8.04e-05 | 1.21e-03 | 15.12x | 27.1s | DEFAULT_SUBCARRIERS | CV | PASS |
+| ESP32 | `baseline_esp32_64sc_20260503_123427.npz` / `movement_esp32_64sc_20260503_123451.npz` | 1.77e-04 | 1.32e-03 | 7.43x | 13.4s | DEFAULT_SUBCARRIERS | CV | PASS |
+| S3 | `baseline_s3_64sc_20260329_125557.npz` / `movement_s3_64sc_20260329_125616.npz` | 0.08 | 1.31 | 15.74x | 8.7s | DEFAULT_SUBCARRIERS | raw_std | PASS |
+| S3 | `baseline_s3_64sc_20260117_222606.npz` / `movement_s3_64sc_20260117_222626.npz` | 0.86 | 8.54 | 9.98x | 10.2s | DEFAULT_SUBCARRIERS | raw_std | PASS |
+| S3 | `baseline_s3_64sc_20260503_122221.npz` / `movement_s3_64sc_20260503_122250.npz` | 0.20 | 1.55 | 7.96x | 18.9s | DEFAULT_SUBCARRIERS | raw_std | PASS |
+| S3 | `baseline_s3_64sc_20260503_132012.npz` / `movement_s3_64sc_20260503_132053.npz` | 0.88 | 5.03 | 5.69x | 31.1s | DEFAULT_SUBCARRIERS | raw_std | PASS |
 
 ## Summary
 
