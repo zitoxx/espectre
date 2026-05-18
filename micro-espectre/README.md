@@ -499,7 +499,7 @@ Micro-ESPectre includes a **neural network-based motion detector** as an experim
 
 ### ML Detector (Experimental)
 
-The ML detector (`DETECTION_ALGORITHM = "ml"`) is a compact MLP trained on real CSI data. It extracts 12 statistical features from turbulence patterns and outputs a motion probability.
+The ML detector (`DETECTION_ALGORITHM = "ml"`) is a compact MLP trained on real CSI data. It extracts 12 turbulence-window features, including robust spread statistics such as `turb_iqr` and `turb_mad`, and outputs a motion probability.
 
 | Aspect | Details |
 |--------|---------|

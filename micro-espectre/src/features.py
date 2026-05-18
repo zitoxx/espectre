@@ -83,25 +83,38 @@ def calc_entropy_turb(turbulence_buffer, buffer_count, n_bins=10):
     return entropy
 
 
-def calc_zero_crossing_rate(turbulence_buffer, buffer_count, mean=None):
-    """Calculate zero-crossing rate around mean."""
+def _interpolate_sorted_percentile(sorted_values, count, percentile):
+    """Calculate percentile from an already sorted list."""
+    if count == 0:
+        return 0.0
+    if count == 1:
+        return sorted_values[0]
+
+    position = (count - 1) * (percentile / 100.0)
+    lower_idx = int(position)
+    upper_idx = lower_idx + 1
+    if upper_idx >= count:
+        return sorted_values[count - 1]
+
+    fraction = position - lower_idx
+    lower = sorted_values[lower_idx]
+    upper = sorted_values[upper_idx]
+    return lower * (1.0 - fraction) + upper * fraction
+
+
+def calc_iqr(turbulence_buffer, buffer_count):
+    """Calculate interquartile range (P75 - P25)."""
     if buffer_count < 2:
         return 0.0
 
-    if mean is None:
-        total = 0.0
-        for i in range(buffer_count):
-            total += turbulence_buffer[i]
-        mean = total / buffer_count
+    sorted_vals = [0.0] * buffer_count
+    for i in range(buffer_count):
+        sorted_vals[i] = turbulence_buffer[i]
+    insertion_sort(sorted_vals, buffer_count)
 
-    crossings = 0
-    prev_above = turbulence_buffer[0] >= mean
-    for i in range(1, buffer_count):
-        curr_above = turbulence_buffer[i] >= mean
-        if curr_above != prev_above:
-            crossings += 1
-        prev_above = curr_above
-    return crossings / (buffer_count - 1)
+    q1 = _interpolate_sorted_percentile(sorted_vals, buffer_count, 25.0)
+    q3 = _interpolate_sorted_percentile(sorted_vals, buffer_count, 75.0)
+    return q3 - q1
 
 
 def calc_autocorrelation(turbulence_buffer, buffer_count, mean=None, variance=None, lag=1):
@@ -174,7 +187,7 @@ def calc_waveform_length(turbulence_buffer, buffer_count):
 
 # Default feature set (12 features from turbulence window statistics/temporal patterns)
 DEFAULT_FEATURES = [
-    'turb_mean', 'turb_std', 'turb_max', 'turb_min', 'turb_zcr',
+    'turb_mean', 'turb_std', 'turb_max', 'turb_min', 'turb_iqr',
     'turb_skewness', 'turb_kurtosis', 'turb_entropy', 'turb_autocorr', 'turb_mad',
     'turb_slope', 'waveform_length'
 ]
@@ -218,7 +231,7 @@ def extract_features_by_name(turbulence_buffer, buffer_count, amplitudes=None, f
         'turb_std': lambda: turb_std,
         'turb_max': lambda: turb_max,
         'turb_min': lambda: turb_min,
-        'turb_zcr': lambda: calc_zero_crossing_rate(turb_list, n, mean=turb_mean),
+        'turb_iqr': lambda: calc_iqr(turb_list, n),
         'turb_skewness': lambda: calc_skewness(turb_list, n, turb_mean, turb_std),
         'turb_kurtosis': lambda: calc_kurtosis(turb_list, n, turb_mean, turb_std),
         'turb_entropy': lambda: calc_entropy_turb(turb_list, n),

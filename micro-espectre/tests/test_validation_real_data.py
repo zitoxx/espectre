@@ -43,8 +43,7 @@ nbvi_calibrator.BUFFER_FILE = os.path.join(tempfile.gettempdir(), 'nbvi_buffer_v
 # Import from src and tools
 from segmentation import SegmentationContext
 from features import (
-    calc_skewness, calc_kurtosis, calc_entropy_turb,
-    calc_zero_crossing_rate, calc_mad,
+    calc_skewness, calc_kurtosis, calc_mad,
 )
 from filters import HampelFilter
 from csi_utils import (

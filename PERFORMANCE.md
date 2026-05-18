@@ -47,7 +47,7 @@ Data location: `micro-espectre/data/`
 ## Running Tests
 
 ```bash
-source venv/bin/activate
+source .venv/bin/activate
 
 # C++
 cd test && pio test -f test_motion_detection -v
@@ -75,13 +75,13 @@ Current C++ and Python validation runs match on this dataset/configuration (same
 | ESP32-C5 | ML | 100.0% | 100.0% | 0.0% | 100.0% |
 | ESP32-C6 | MVS Default | 99.7% | 100.0% | 0.0% | 99.9% |
 | ESP32-C6 | MVS + NBVI | 99.6% | 100.0% | 0.0% | 99.8% |
-| ESP32-C6 | ML | 100.0% | 100.0% | 0.0% | 100.0% |
+| ESP32-C6 | ML | 99.9% | 100.0% | 0.0% | 99.9% |
 | ESP32-S3 | MVS Default | 99.7% | 100.0% | 0.0% | 99.9% |
 | ESP32-S3 | MVS + NBVI | 99.7% | 100.0% | 0.0% | 99.9% |
 | ESP32-S3 | ML | 100.0% | 100.0% | 0.0% | 100.0% |
 | ESP32 | MVS Default | 99.4% | 100.0% | 0.0% | 99.7% |
 | ESP32 | MVS + NBVI | 99.4% | 100.0% | 0.0% | 99.7% |
-| ESP32 | ML | 100.0% | 100.0% | 0.0% | 100.0% |
+| ESP32 | ML | 99.9% | 100.0% | 0.0% | 99.9% |
 
 **MVS Default**: Uses default subcarriers.
 **MVS + NBVI**: Uses NBVI auto-calibration (production case).
@@ -157,7 +157,7 @@ For ML architecture details, see [ALGORITHMS.md](micro-espectre/ALGORITHMS.md#ar
 
 ---
 
-## 60-Second Test Recordings (Current)
+## 60-Second Test Recordings
 
 Continuous recordings (~30s idle + ~30s motion) provide a realistic production-style scenario. These files are not used during training.
 
@@ -169,16 +169,16 @@ Methodology:
 - `ML`: use exported production weights with threshold `5.0` and Hampel enabled
 - Both paths skip the first `100` packets of each segment as warmup when scoring packet-level metrics
 
-| Chip | Algorithm | Recall | Precision | FP Rate | F1-Score |
-|------|-----------|--------|-----------|---------|----------|
-| C3 | MVS + NBVI | 100.0% | 100.0% | 0.0% | 100.0% |
-| C3 | ML | 100.0% | 100.0% | 0.0% | 100.0% |
-| C5 | MVS + NBVI | 100.0% | 91.1% | 7.9% | 95.3% |
-| C5 | ML | 100.0% | 91.1% | 7.9% | 95.3% |
-| C6 | MVS + NBVI | 100.0% | 81.4% | 21.8% | 89.7% |
-| C6 | ML | 95.8% | 94.1% | 5.7% | 94.9% |
-
-These long recordings currently highlight that packet-level real-data validation and long continuous recordings stress the system differently. In this small long-recording set, ML remains more robust than MVS on the hardest capture (`C6`), but both `C5` and `C6` still exceed the `<5%` FP target for continuous recordings. `C3` remains saturated for both methods.
+| Chip | Algorithm | Recall | Precision | FP Rate | F1-Score | FP Count |
+|------|-----------|--------|-----------|---------|----------|----------|
+| C3 | MVS + NBVI | 100.0% | 100.0% | 0.0% | 100.0% | 0 |
+| C3 | ML | 100.0% | 100.0% | 0.0% | 100.0% | 0 |
+| C5 | MVS + NBVI | 100.0% | 91.1% | 7.9% | 95.3% | 253 |
+| C5 | ML | 100.0% | 91.1% | 7.9% | 95.3% | 254 |
+| C6 | MVS + NBVI | 100.0% | 81.4% | 21.8% | 89.7% | 691 |
+| C6 | ML | 90.8% | 93.2% | 6.4% | 92.0% | 201 |
+| S3 | MVS + NBVI | 100.0% | 96.9% | 2.8% | 98.4% | 86 |
+| S3 | ML | 94.1% | 95.8% | 3.7% | 94.9% | 113 |
 
 ---
 
@@ -186,7 +186,7 @@ These long recordings currently highlight that packet-level real-data validation
 
 | Date | Version | Dataset | Calibration | Algorithm | Recall | Precision | FP Rate | F1-Score |
 |------|---------|---------|-------------|-----------|--------|-----------|---------|----------|
-| 2026-05-17 | v2.8.0 | C6 |  -   | ML + Hampel | 100.0% | 100.0% | 0.0% | 100.0% |
+| 2026-05-18 | v2.8.0 | C6 |  -   | ML + Hampel | 99.9% | 100.0% | 0.0% | 99.9% |
 | 2026-05-04 | v2.8.0 | C6 | NBVI | MVS + Hampel| 99.6% | 100.0% | 0.0% | 99.8% |
 | 2026-03-11 | v2.6.1 | C6 |  -   | ML | 100.0% | 100.0% | 0.0% | 100.0% |
 | 2026-03-11 | v2.6.1 | C6 | NBVI | MVS | 99.3% | 100.0% | 0.0% | 99.7% |

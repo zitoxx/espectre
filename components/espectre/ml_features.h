@@ -11,7 +11,7 @@
  *  1. turb_std       - Standard deviation
  *  2. turb_max       - Maximum value
  *  3. turb_min       - Minimum value
- *  4. turb_zcr       - Zero-crossing rate around mean
+ *  4. turb_iqr       - Interquartile range
  *  5. turb_skewness  - Fisher's skewness (3rd moment)
  *  6. turb_kurtosis  - Fisher's kurtosis (4th moment)
  *  7. turb_entropy   - Shannon entropy (turbulence)
@@ -133,32 +133,44 @@ inline float calc_entropy(const float* values, uint16_t count) {
     return entropy;
 }
 
+inline float interpolate_sorted_percentile(const float* sorted_values, uint16_t count,
+                                           float percentile) {
+    if (count == 0 || sorted_values == nullptr) return 0.0f;
+    if (count == 1) return sorted_values[0];
+
+    float position = (count - 1) * (percentile / 100.0f);
+    uint16_t lower_idx = static_cast<uint16_t>(position);
+    uint16_t upper_idx = lower_idx + 1;
+    if (upper_idx >= count) return sorted_values[count - 1];
+
+    float fraction = position - lower_idx;
+    float lower = sorted_values[lower_idx];
+    float upper = sorted_values[upper_idx];
+    return lower * (1.0f - fraction) + upper * fraction;
+}
+
 /**
- * Calculate zero-crossing rate around the mean.
- * 
- * Counts the fraction of consecutive samples where the signal crosses
- * the mean value. High ZCR indicates rapid oscillations (motion).
- * 
+ * Calculate interquartile range (P75 - P25).
+ *
+ * Robust measure of spread, less sensitive to oscillatory sign flips than
+ * zero-crossing rate on quiet-but-noisy windows.
+ *
  * @param values Array of values
  * @param count Number of values
- * @param mean Pre-computed mean
- * @return Zero-crossing rate (0.0 to 1.0)
+ * @return IQR value
  */
-inline float calc_zero_crossing_rate(const float* values, uint16_t count, float mean) {
-    if (count < 2) return 0.0f;
-    
-    uint16_t crossings = 0;
-    bool prev_above = values[0] >= mean;
-    
-    for (uint16_t i = 1; i < count; i++) {
-        bool curr_above = values[i] >= mean;
-        if (curr_above != prev_above) {
-            crossings++;
-        }
-        prev_above = curr_above;
+inline float calc_iqr(const float* values, uint16_t count) {
+    if (count < 2 || count > ML_MAX_SORT_SIZE) return 0.0f;
+
+    float sorted[ML_MAX_SORT_SIZE];
+    for (uint16_t i = 0; i < count; i++) {
+        sorted[i] = values[i];
     }
-    
-    return static_cast<float>(crossings) / (count - 1);
+    std::sort(sorted, sorted + count);
+
+    float q1 = interpolate_sorted_percentile(sorted, count, 25.0f);
+    float q3 = interpolate_sorted_percentile(sorted, count, 75.0f);
+    return q3 - q1;
 }
 
 /**
@@ -286,8 +298,8 @@ inline void extract_ml_features(const float* turb_buffer, uint16_t turb_count,
     float turb_var = var_sum / turb_count;
     float turb_std = std::sqrt(turb_var);
     
-    // Zero-crossing rate
-    float turb_zcr = calc_zero_crossing_rate(turb_buffer, turb_count, turb_mean);
+    // Interquartile range
+    float turb_iqr = calc_iqr(turb_buffer, turb_count);
     
     // Skewness (pre-computed mean/std passed to avoid redundant calculation)
     float turb_skewness = calc_skewness(turb_buffer, turb_count, turb_mean, turb_std);
@@ -325,7 +337,7 @@ inline void extract_ml_features(const float* turb_buffer, uint16_t turb_count,
     features_out[1] = turb_std;        // 1
     features_out[2] = turb_max;        // 2
     features_out[3] = turb_min;        // 3
-    features_out[4] = turb_zcr;        // 4
+    features_out[4] = turb_iqr;        // 4
     features_out[5] = turb_skewness;   // 5
     features_out[6] = turb_kurtosis;   // 6
     features_out[7] = turb_entropy;    // 7

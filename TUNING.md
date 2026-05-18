@@ -127,7 +127,7 @@ espectre:
 | Algorithm | Description | Threshold Range | Best For |
 |-----------|-------------|-----------------|----------|
 | `mvs` | Moving Variance Segmentation | 0.0 - 10.0 | General purpose, adaptive |
-| `ml` | Neural network detector | 0.0 - 10.0 (scaled metric) | Higher accuracy |
+| `ml` | Neural network detector | 0.0 - 10.0 (scaled metric) | Calibration-free boot |
 
 ### Window Size (10-200 packets)
 

@@ -572,7 +572,7 @@ The ML detector extracts **12 non-redundant statistical features** from a slidin
 | 1 | `turb_std` | σ = √(Σ(xᵢ-μ)²/n) | Standard deviation (spread) |
 | 2 | `turb_max` | max(xᵢ) | Maximum value in window |
 | 3 | `turb_min` | min(xᵢ) | Minimum value in window |
-| 4 | `turb_zcr` | crossings / (n-1) | Zero-crossing rate around mean |
+| 4 | `turb_iqr` | P75(x) - P25(x) | Interquartile range (robust spread) |
 | 5 | `turb_skewness` | E[(X-μ)³]/σ³ | Turbulence asymmetry (3rd moment) |
 | 6 | `turb_kurtosis` | E[(X-μ)⁴]/σ⁴ - 3 | Turbulence tailedness (4th moment) |
 | 7 | `turb_entropy` | -Σpᵢ log₂(pᵢ) | Shannon entropy (randomness) |
@@ -585,16 +585,16 @@ The ML detector extracts **12 non-redundant statistical features** from a slidin
 
 **Basic Statistics (0-3)**: Standard statistical measures of the turbulence buffer.
 
-**Signal Dynamics (4)**:
-- **Zero-crossing rate**: Fraction of consecutive samples crossing the mean. High ZCR indicates rapid oscillations (motion), low ZCR indicates stable signal (idle).
+**Robust Spread (4, 9)**:
+- **Interquartile range (IQR)**: Spread between the 75th and 25th percentiles. More robust than zero-crossing-style oscillation counts on quiet-but-noisy windows.
+- **MAD**: Robust alternative to std, less sensitive to outliers.
 
 **Higher-Order Moments (5-6)**: Computed from the turbulence buffer for stable estimates.
 - **Skewness**: Asymmetry of turbulence distribution. Motion typically increases skewness.
 - **Kurtosis**: "Tailedness" of turbulence distribution. Motion produces heavier tails.
 
-**Robust Statistics (7, 9)**:
+**Distribution Complexity (7)**:
 - **Entropy**: High during motion (unpredictable), low during idle (stable)
-- **MAD**: Robust alternative to std, less sensitive to outliers
 
 **Temporal Structure (8, 10)**:
 - **Autocorrelation**: Lag-1 temporal correlation. High during idle (smooth signal), low during motion (turbulent)
@@ -607,30 +607,47 @@ The ML detector extracts **12 non-redundant statistical features** from a slidin
 
 SHAP and correlation can diverge significantly: correlation captures linear association with the label, while SHAP captures non-linear contribution inside the network.
 
-Updated values from `10_train_ml_model.py` (`--correlation` and `--shap`):
+Current SHAP ranking from `python tools/10_train_ml_model.py --shap`:
+s
+| Rank | Feature | SHAP Value | Contribution |
+|------|---------|------------|--------------|
+| 1 | `turb_autocorr` | 0.174228 | 22.3% |
+| 2 | `turb_max` | 0.149649 | 19.1% |
+| 3 | `turb_min` | 0.127015 | 16.2% |
+| 4 | `waveform_length` | 0.065917 | 8.4% |
+| 5 | `turb_std` | 0.056062 | 7.2% |
+| 6 | `turb_mad` | 0.053340 | 6.8% |
+| 7 | `turb_iqr` | 0.048751 | 6.2% |
+| 8 | `turb_mean` | 0.038371 | 4.9% |
+| 9 | `turb_slope` | 0.021070 | 2.7% |
+| 10 | `turb_entropy` | 0.020746 | 2.7% |
+| 11 | `turb_skewness` | 0.013839 | 1.8% |
+| 12 | `turb_kurtosis` | 0.012968 | 1.7% |
 
-| Rank (SHAP) | Feature | SHAP | Contribution | Corr |
-|-------------|---------|------|--------------|------|
-| 1 | `turb_autocorr` | 0.279470 | 39.3% | +0.9003 |
-| 2 | `turb_entropy` | 0.064995 | 9.1% | +0.1978 |
-| 3 | `turb_min` | 0.064498 | 9.1% | -0.5491 |
-| 4 | `turb_zcr` | 0.055212 | 7.8% | -0.8672 |
-| 5 | `waveform_length` | 0.050079 | 7.0% | +0.3834 |
-| 6 | `turb_kurtosis` | 0.049813 | 7.0% | -0.1761 |
-| 7 | `turb_std` | 0.047222 | 6.6% | +0.5847 |
-| 8 | `turb_mean` | 0.039395 | 5.5% | -0.2334 |
-| 9 | `turb_mad` | 0.021467 | 3.0% | +0.5704 |
-| 10 | `turb_slope` | 0.018362 | 2.6% | -0.0012 |
-| 11 | `turb_skewness` | 0.010923 | 1.5% | +0.3252 |
-| 12 | `turb_max` | 0.009818 | 1.4% | +0.1758 |
+Current correlation ranking from `python tools/10_train_ml_model.py --correlation`:
+
+| Rank | Feature | Corr |
+|------|---------|------|
+| 1 | `turb_autocorr` | +0.7988 |
+| 2 | `turb_iqr` | +0.6547 |
+| 3 | `turb_mad` | +0.6538 |
+| 4 | `turb_std` | +0.6449 |
+| 5 | `turb_min` | -0.3906 |
+| 6 | `waveform_length` | +0.3719 |
+| 7 | `turb_max` | +0.3051 |
+| 8 | `turb_entropy` | +0.2867 |
+| 9 | `turb_kurtosis` | -0.1605 |
+| 10 | `turb_skewness` | +0.1175 |
+| 11 | `turb_mean` | -0.0806 |
+| 12 | `turb_slope` | -0.0144 |
 
 #### Feature Definitions
 
-**Zero-Crossing Rate**:
+**Interquartile Range (IQR)**:
 ```
-ZCR = count(sign(x[i] - μ) ≠ sign(x[i-1] - μ)) / (n - 1)
+IQR = P75(x) - P25(x)
 ```
-Counts how often the signal crosses the mean value. Ranges from 0.0 (monotonic) to 1.0 (alternating every sample).
+Measures the width of the middle 50% of the turbulence distribution. Unlike zero-crossing rate, it responds to spread without being dominated by rapid sign flips around the mean, which made it a better fit for suppressing quiet-window false positives in the current long-run validation set.
 
 **Skewness** (third standardized moment):
 ```
@@ -692,7 +709,7 @@ The training pipeline includes:
 
 ### Performance
 
-ML achieves higher recall than MVS with a small tradeoff in precision. ML's strength is **generalization** -- it performs well across different environments without per-environment calibration.
+ML's strength is **generalization without runtime calibration**: it uses fixed subcarriers and pre-trained weights, so it can boot quickly and perform strongly on the paired real-data validation set.
 
 See [PERFORMANCE.md](../PERFORMANCE.md) for detailed per-chip results and [TUNING.md](../TUNING.md) for configuration and tuning guidance.
 

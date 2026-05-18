@@ -14,7 +14,7 @@ from features import (
     calc_skewness,
     calc_kurtosis,
     calc_entropy_turb,
-    calc_zero_crossing_rate,
+    calc_iqr,
     calc_autocorrelation,
     calc_mad,
     extract_features_by_name,
@@ -198,52 +198,40 @@ class TestCalcEntropyTurb:
         assert entropy >= 0
 
 
-class TestCalcZeroCrossingRate:
-    """Test zero-crossing rate calculation"""
-    
+class TestCalcIQR:
+    """Test interquartile range calculation."""
+
     def test_empty_buffer(self):
-        """Test ZCR of empty buffer"""
-        assert calc_zero_crossing_rate([], 0) == 0.0
-    
+        """Test IQR of empty buffer."""
+        assert calc_iqr([], 0) == 0.0
+
     def test_single_value(self):
-        """Test ZCR of single value"""
-        assert calc_zero_crossing_rate([5.0], 1) == 0.0
-    
+        """Test IQR of single value."""
+        assert calc_iqr([5.0], 1) == 0.0
+
     def test_constant_values(self):
-        """Test ZCR of constant values (all at mean)"""
+        """Test IQR of constant values."""
         buffer = [5.0] * 10
-        zcr = calc_zero_crossing_rate(buffer, 10)
-        assert zcr == 0.0
-    
-    def test_alternating_values(self):
-        """Test ZCR of perfectly alternating values"""
-        buffer = [0.0, 10.0, 0.0, 10.0, 0.0, 10.0]
-        zcr = calc_zero_crossing_rate(buffer, 6)
-        # Mean is 5.0, so 0<5<10>5>0<5<10>5>0 -> crosses every time
-        assert zcr == 1.0
-    
-    def test_monotonic_increasing(self):
-        """Test ZCR of monotonic increasing values"""
-        buffer = [float(i) for i in range(10)]
-        zcr = calc_zero_crossing_rate(buffer, 10)
-        # Mean is 4.5, values cross only once (from below to above)
-        # 0,1,2,3,4 below mean, 5,6,7,8,9 above mean -> 1 crossing
-        assert zcr == pytest.approx(1.0 / 9.0, rel=1e-6)
-    
-    def test_output_range(self):
-        """Test that ZCR is always in [0, 1]"""
+        assert calc_iqr(buffer, 10) == 0.0
+
+    def test_monotonic_values(self):
+        """Test IQR on a simple increasing sequence."""
+        buffer = [float(i) for i in range(8)]
+        iqr = calc_iqr(buffer, 8)
+        assert iqr == pytest.approx(3.5, rel=1e-6)
+
+    def test_outlier_robustness(self):
+        """Test that a single outlier has limited impact on IQR."""
+        buffer = [1.0] * 9 + [100.0]
+        iqr = calc_iqr(buffer, 10)
+        assert iqr == 0.0
+
+    def test_positive_for_spread_distribution(self):
+        """Test that wider distributions yield positive IQR."""
         np.random.seed(42)
-        buffer = list(np.random.normal(5, 2, 50))
-        zcr = calc_zero_crossing_rate(buffer, 50)
-        assert 0.0 <= zcr <= 1.0
-    
-    def test_high_zcr_for_noisy_signal(self):
-        """Test that noisy signal has high ZCR"""
-        np.random.seed(42)
-        buffer = list(np.random.normal(0, 1, 100))
-        zcr = calc_zero_crossing_rate(buffer, 100)
-        # Random noise should cross mean frequently
-        assert zcr > 0.3
+        buffer = list(np.random.normal(5, 2, 100))
+        iqr = calc_iqr(buffer, 100)
+        assert iqr > 0.0
 
 
 class TestCalcAutocorrelation:
