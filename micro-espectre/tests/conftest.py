@@ -9,6 +9,7 @@ License: GPLv3
 
 import sys
 import math
+import os
 import pytest
 import numpy as np
 import json

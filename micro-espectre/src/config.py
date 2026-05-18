@@ -4,6 +4,7 @@ Micro-ESPectre Configuration
 Author: Francesco Pace <francesco.pace@gmail.com>
 License: GPLv3
 """
+import sys
 
 # WiFi Configuration
 WIFI_SSID = "YourSSID"
@@ -87,10 +88,12 @@ DC_SUBCARRIER = 32             # DC null subcarrier
 BAND_SIZE = 12                 # Selected subcarriers for motion detection
 
 # Optional local overrides (config_local.py is gitignored)
-try:
-    import src.config_local as _local
-    for _name in dir(_local):
-        if _name.isupper():
-            globals()[_name] = getattr(_local, _name)
-except ImportError:
-    pass
+# Skip local overrides only under pytest to keep tests hermetic.
+if "pytest" not in sys.modules:
+    try:
+        import src.config_local as _local
+        for _name in dir(_local):
+            if _name.isupper():
+                globals()[_name] = getattr(_local, _name)
+    except ImportError:
+        pass

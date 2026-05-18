@@ -34,10 +34,9 @@ try:
         ENABLE_LOWPASS_FILTER, LOWPASS_CUTOFF
     )
     from src.utils import (
-        to_signed_int8, calculate_percentile,
-        calculate_variance, calculate_std, calculate_moving_variance
+        to_signed_int8, calculate_percentile
     )
-    from src.filters import HampelFilter, LowPassFilter
+    from src.segmentation import SegmentationContext
 except ImportError:
     from config import (
         NUM_SUBCARRIERS, EXPECTED_CSI_LEN,
@@ -47,10 +46,9 @@ except ImportError:
         ENABLE_LOWPASS_FILTER, LOWPASS_CUTOFF
     )
     from utils import (
-        to_signed_int8, calculate_percentile,
-        calculate_variance, calculate_std, calculate_moving_variance
+        to_signed_int8, calculate_percentile
     )
-    from filters import HampelFilter, LowPassFilter
+    from segmentation import SegmentationContext
 
 # Constants
 BUFFER_FILE = '/nbvi_buffer.bin'
@@ -437,8 +435,8 @@ class NBVICalibrator:
         """
         Validate subcarriers by running MVS on entire buffer.
 
-        Uses the same runtime filter chain when enabled:
-        turbulence -> Hampel -> low-pass -> moving variance
+        Uses the runtime detector path for filtering and moving variance:
+        turbulence -> SegmentationContext.add_turbulence() -> update_state()
 
         Returns:
             tuple: (fp_rate, mv_values) where mv_values is list of moving variance values
@@ -446,7 +444,17 @@ class NBVICalibrator:
         if self._packet_count < self.mvs_window_size:
             return 0.0, []
         
-        turbulence_buffer = [0.0] * self.mvs_window_size
+        ctx = SegmentationContext(
+            window_size=self.mvs_window_size,
+            threshold=1.0,
+            enable_lowpass=ENABLE_LOWPASS_FILTER,
+            lowpass_cutoff=LOWPASS_CUTOFF,
+            enable_hampel=ENABLE_HAMPEL_FILTER,
+            hampel_window=HAMPEL_WINDOW,
+            hampel_threshold=HAMPEL_THRESHOLD,
+        )
+        ctx.use_cv_normalization = self.use_cv_normalization
+
         total_packets = 0
         # Subsample mv_values at 1:5 for the adaptive threshold (P95).
         # The 750-packet buffer is needed for band selection quality, but P95
@@ -455,52 +463,20 @@ class NBVICalibrator:
         # NBVI streaming phase, while 140 floats (560 bytes) fits comfortably.
         MV_SUBSAMPLE = 5
         mv_values = []
-
-        # Match runtime filter pipeline when enabled in config.
-        hampel_filter = None
-        lowpass_filter = None
-        if ENABLE_HAMPEL_FILTER:
-            hampel_filter = HampelFilter(
-                window_size=HAMPEL_WINDOW,
-                threshold=HAMPEL_THRESHOLD
-            )
-        if ENABLE_LOWPASS_FILTER:
-            lowpass_filter = LowPassFilter(
-                cutoff_hz=LOWPASS_CUTOFF,
-                sample_rate_hz=100.0,
-                enabled=True
-            )
         
         for pkt_idx in range(self._packet_count):
             packet_mags = self._read_packet(pkt_idx)
             if packet_mags is None:
                 continue
             
-            band_mags = [packet_mags[sc] for sc in band if sc < len(packet_mags)]
-            if not band_mags:
-                continue
-            
-            mean_mag = sum(band_mags) / len(band_mags)
-            variance = sum((m - mean_mag) ** 2 for m in band_mags) / len(band_mags)
-            std = math.sqrt(variance) if variance > 0 else 0.0
-            if self.use_cv_normalization:
-                turbulence = std / mean_mag if mean_mag > 1e-6 else 0.0
-            else:
-                turbulence = std
-            
-            filtered_turbulence = turbulence
-            if hampel_filter is not None:
-                filtered_turbulence = hampel_filter.filter(filtered_turbulence)
-            if lowpass_filter is not None:
-                filtered_turbulence = lowpass_filter.filter(filtered_turbulence)
-
-            turbulence_buffer.pop(0)
-            turbulence_buffer.append(filtered_turbulence)
+            turbulence = self._packet_turbulence(packet_mags, band)
+            ctx.add_turbulence(turbulence)
             
             if pkt_idx < self.mvs_window_size:
                 continue
             
-            mv_variance = calculate_variance(turbulence_buffer)
+            metrics = ctx.update_state()
+            mv_variance = metrics['moving_variance']
             if total_packets % MV_SUBSAMPLE == 0:
                 mv_values.append(mv_variance)
             
