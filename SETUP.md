@@ -226,7 +226,7 @@ All parameters can be adjusted in the YAML file under the `espectre:` section:
 |-----------|------|---------|-------------|
 | `detection_algorithm` | string | mvs | Detection algorithm: `mvs` (variance) or `ml` (neural network) |
 | `traffic_generator_rate` | int | 100 | Packets/sec for CSI generation (0-1000, 0=disabled) |
-| `traffic_generator_mode` | string | dns | Traffic generator mode: `dns` (UDP queries) or `ping` (ICMP) |
+| `traffic_generator_mode` | string | ping | Traffic generator mode: `ping` (ICMP) or `dns` (UDP queries) |
 | `publish_interval` | int | auto | Packets between periodic sensor/log updates (default: same as traffic_generator_rate, or 100 if traffic is 0) |
 | `evaluation_interval` | int | 25 | Packets between internal detector state evaluations |
 | `motion_on_hits` | int | 3 | Consecutive evaluated hits required before switching the binary sensor to `MOTION` |
@@ -439,7 +439,7 @@ The traffic generator creates network packets that trigger CSI callbacks from th
 ```yaml
 espectre:
   traffic_generator_rate: 100  # packets per second (0-1000)
-  traffic_generator_mode: dns  # dns (default) or ping
+  traffic_generator_mode: ping  # ping (default) or dns
 ```
 
 ### Traffic Generator Mode
@@ -448,20 +448,20 @@ Two modes are available:
 
 | Mode | Protocol | Description |
 |------|----------|-------------|
-| `dns` | UDP | Sends DNS queries to gateway:53. Works with most routers. (default) |
-| `ping` | ICMP | Sends ICMP echo requests to gateway. Alternative if DNS doesn't work. |
+| `ping` | ICMP | Sends ICMP echo requests to gateway. Default mode, more reliable on routers that ignore root-domain DNS queries. |
+| `dns` | UDP | Sends DNS queries to gateway:53. Lower-overhead alternative when DNS works well in your environment. |
 
 Both modes generate minimal network traffic (<20 bytes per packet). 
 
 **Choosing a mode:**
-- Start with `dns` (default) - works with most home routers
-- Try `ping` if you get low packet rates - some routers don't respond to root domain DNS queries
+- Start with `ping` (default) - more reliable when routers ignore root-domain DNS queries
+- Try `dns` if you prefer lower-overhead UDP traffic and your router responds consistently
 - Note: some routers/firewalls may rate-limit or block ICMP ping responses
 
 ```yaml
 espectre:
   traffic_generator_rate: 100
-  traffic_generator_mode: ping  # Use ICMP ping instead of DNS
+  traffic_generator_mode: dns  # Use DNS queries instead of the default ping mode
 ```
 
 **Community test results** (thanks to [@gasment](https://github.com/francescopace/espectre/issues/48)):

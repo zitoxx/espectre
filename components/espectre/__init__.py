@@ -127,8 +127,8 @@ CONFIG_SCHEMA = cv.Schema({
     # Traffic generator (0 = disabled, use external WiFi traffic)
     cv.Optional(CONF_TRAFFIC_GENERATOR_RATE, default=100): cv.int_range(min=0, max=1000),
     
-    # Traffic generator mode: dns (default) or ping (ICMP, more compatible)
-    cv.Optional(CONF_TRAFFIC_GENERATOR_MODE, default="dns"): cv.one_of("dns", "ping", lower=True),
+    # Traffic generator mode: ping (default) or dns
+    cv.Optional(CONF_TRAFFIC_GENERATOR_MODE, default="ping"): cv.one_of("dns", "ping", lower=True),
     
     # Gain lock mode: auto (default), enabled, or disabled
     # Auto: enables gain lock but skips if signal too strong (AGC < 30)

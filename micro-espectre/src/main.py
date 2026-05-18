@@ -589,7 +589,8 @@ def main():
     
     # Initialize and start traffic generator (rate is static from config.py)
     gc.collect()  # Free memory before creating socket
-    traffic_gen = TrafficGenerator()
+    traffic_mode = getattr(config, 'TRAFFIC_GENERATOR_MODE', 'ping')
+    traffic_gen = TrafficGenerator(mode=traffic_mode)
     if config.TRAFFIC_GENERATOR_RATE > 0:
         if not traffic_gen.start(config.TRAFFIC_GENERATOR_RATE):
             print("FATAL: Traffic generator failed to start - CSI will not work")
@@ -598,7 +599,7 @@ def main():
             time.sleep(5)
             machine.reset()  # Reboot and retry
         
-        print(f'Traffic generator started ({config.TRAFFIC_GENERATOR_RATE} pps)')
+        print(f'Traffic generator started ({traffic_mode}, {config.TRAFFIC_GENERATOR_RATE} pps)')
         
         # Verify CSI packets are flowing with retry logic
         max_tg_retries = 3

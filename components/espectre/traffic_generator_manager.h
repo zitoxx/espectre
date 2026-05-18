@@ -3,8 +3,8 @@
  * 
  * Generates WiFi traffic using UDP/DNS queries or ICMP ping to ensure CSI data availability.
  * Supports two modes:
- *   - dns: UDP queries to gateway:53 (default, lower overhead)
- *   - ping: ICMP echo to gateway (more compatible with all routers)
+ *   - ping: ICMP echo to gateway (default, more compatible with all routers)
+ *   - dns: UDP queries to gateway:53 (lower overhead)
  * 
  * Author: Francesco Pace <francesco.pace@gmail.com>
  * License: GPLv3
@@ -65,8 +65,8 @@ inline bool handle_send_error(SendErrorState& state, ssize_t sent, int err_no, i
  * Traffic Generator Mode
  */
 enum class TrafficGeneratorMode {
-  DNS,   // UDP DNS queries to gateway:53 (default)
-  PING   // ICMP echo requests to gateway
+  DNS,   // UDP DNS queries to gateway:53
+  PING   // ICMP echo requests to gateway (default)
 };
 
 /**
@@ -86,7 +86,7 @@ class TrafficGeneratorManager {
    * @param rate_pps Packets per second (typically 100)
    * @param mode Traffic generation mode (dns or ping)
    */
-  void init(uint32_t rate_pps, TrafficGeneratorMode mode = TrafficGeneratorMode::DNS);
+  void init(uint32_t rate_pps, TrafficGeneratorMode mode = TrafficGeneratorMode::PING);
   
   /**
    * Start traffic generator
@@ -144,7 +144,7 @@ class TrafficGeneratorManager {
   int sock_{-1};
   esp_ping_handle_t ping_handle_{nullptr};
   uint32_t rate_pps_{0};
-  TrafficGeneratorMode mode_{TrafficGeneratorMode::DNS};
+  TrafficGeneratorMode mode_{TrafficGeneratorMode::PING};
   std::atomic<bool> running_{false};  // atomic: accessed from main task and FreeRTOS task
   std::atomic<bool> paused_{false};   // atomic: accessed from main task and FreeRTOS task
   

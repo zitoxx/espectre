@@ -176,7 +176,7 @@ class ESpectreComponent : public Component {
   float segmentation_threshold_{1.0f};
   uint16_t segmentation_window_size_{100};
   uint32_t traffic_generator_rate_{100};
-  TrafficGeneratorMode traffic_generator_mode_{TrafficGeneratorMode::DNS};
+  TrafficGeneratorMode traffic_generator_mode_{TrafficGeneratorMode::PING};
   GainLockMode gain_lock_mode_{GainLockMode::AUTO};
   uint32_t publish_interval_{100};  // Publish interval in packets (default: same as traffic_generator_rate)
   uint32_t evaluation_interval_{25};

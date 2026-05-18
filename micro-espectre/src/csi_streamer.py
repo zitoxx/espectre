@@ -85,12 +85,13 @@ def stream_csi(dest_ip, duration_sec=0):
     print(f'Chip: {chip_type} (code: {chip_code})')
     
     # Start traffic generator
-    traffic_gen = TrafficGenerator()
+    traffic_mode = getattr(config, 'TRAFFIC_GENERATOR_MODE', 'ping')
+    traffic_gen = TrafficGenerator(mode=traffic_mode)
     traffic_gen_started = False
     if config.TRAFFIC_GENERATOR_RATE > 0:
         if traffic_gen.start(config.TRAFFIC_GENERATOR_RATE):
             traffic_gen_started = True
-            print(f'Traffic generator: {config.TRAFFIC_GENERATOR_RATE} pps')
+            print(f'Traffic generator: {traffic_mode}, {config.TRAFFIC_GENERATOR_RATE} pps')
         time.sleep(1)
     
     # Phase 1: Gain lock (stabilizes AGC/FFT)

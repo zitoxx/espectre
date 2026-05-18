@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file.
 
 ### Runtime and algorithm changes (highest impact)
 
+- **Traffic generator now defaults to `ping` across Python and C++**: both Micro-ESPectre and the ESPHome component now use ICMP ping as the default CSI traffic source instead of DNS, improving compatibility with routers that ignore or rate-limit root-domain DNS queries while keeping `dns` available as an explicit alternative.
 - **Hampel now enabled by default**: `hampel_enabled=true` with threshold `5.0 MAD` (from `4.0`) to suppress extreme spikes while preserving motion sensitivity.
 - **NBVI strategy selection expanded**: each window evaluates four candidates (Entropy Spaced, MAD Clustered, Classic Spaced, Classic Clustered) and selects the lowest-FP option; scoring now exposes `nbvi_classic`, `nbvi_entropy`, and `nbvi_mad`.
 - **ML Movement Score is now more gradual**: the published ML metric now uses temperature scaling before the sigmoid so Home Assistant sees intermediate values instead of an almost pure 0/10 on-off signal. The default 5.0 threshold remains the binary decision boundary, so detection behavior and validation targets stay unchanged while the score becomes more informative for dashboards and automations.
@@ -51,6 +52,7 @@ All notable changes to this project will be documented in this file.
 
 - **Added**: `examples/espectre-s3-touch-lcd.yaml` for Waveshare-compatible 1.47" S3 boards.
 - **Added**: `micro-espectre/notebooks/01_csi_data_explorer.ipynb` and `micro-espectre/notebooks/02_feature_extraction_and_ml.ipynb`.
+- **Updated**: traffic-generator docs, examples, and Micro-ESPectre config templates now reflect `ping` as the default mode and document `dns` as the opt-in alternative.
 - **Updated**: Micro-ESPectre docs now describe `./me detect` as the supported entrypoint for live host-side ML inference and debugging alongside `stream` and `collect`.
 - **Removed/cleaned**: `examples/uart/`; documented optional `hardware_uart: UART0` usage in classic USB-UART bridge configurations.
 
