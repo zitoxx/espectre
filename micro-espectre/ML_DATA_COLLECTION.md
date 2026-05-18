@@ -9,7 +9,7 @@ This guide covers how to collect and label CSI data for training ML models. This
 | Feature | Status |
 |---------|--------|
 | Data collection infrastructure | ✅ Ready |
-| Feature extraction (12 features) | ✅ Ready |
+| Feature extraction (9 features) | ✅ Ready |
 | ML detector (MLP) | ✅ Ready |
 | Training script | ✅ Ready |
 | TFLite export | ✅ Ready |
@@ -395,7 +395,7 @@ This will:
 1. Load all `.npz` files from `data/`
 2. Use raw std for all files (CV normalization disabled for ML)
 3. Apply context-aware MVS-guided sample weighting on the default subcarrier set
-4. Extract 12 features per sliding window
+4. Extract 9 features per sliding window
 5. Run grouped cross-validation by paired capture/session, with blocked scoring to reduce overlap optimism
 6. Report worst-group metrics (session, chip, source file) alongside mean fold metrics
 7. Train the selected MLP architecture with early stopping and dropout

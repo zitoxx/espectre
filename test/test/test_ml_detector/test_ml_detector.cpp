@@ -260,7 +260,7 @@ void test_feature_extraction_basic(void) {
     float turb_buffer[50];
     float amplitudes[12] = {10.0f, 12.0f, 11.0f, 13.0f, 9.0f, 14.0f,
                             10.5f, 11.5f, 12.5f, 10.0f, 11.0f, 13.0f};
-    float features[12];
+    float features[ML_NUM_FEATURES];
     
     // Fill buffer with synthetic data
     for (int i = 0; i < 50; i++) {
@@ -270,28 +270,25 @@ void test_feature_extraction_basic(void) {
     extract_ml_features(turb_buffer, 50, amplitudes, 12, features);
     
     // Verify features are reasonable
-    // Order: mean, std, max, min, iqr, skewness, kurtosis, entropy, autocorr, mad, slope, waveform_length
+    // Order: mean, std, max, min, iqr, skewness, autocorr, mad, waveform_length
     TEST_ASSERT_TRUE(features[0] > 0);   // turb_mean > 0
     TEST_ASSERT_TRUE(features[1] >= 0);  // turb_std >= 0
     TEST_ASSERT_TRUE(features[2] >= features[3]); // turb_max >= turb_min
     TEST_ASSERT_TRUE(features[4] >= 0);  // turb_iqr >= 0
     // features[5] = skewness (can be any value)
-    // features[6] = kurtosis (excess kurtosis, can be negative)
-    TEST_ASSERT_TRUE(features[7] >= 0);  // turb_entropy >= 0
-    TEST_ASSERT_TRUE(features[8] >= -1.0f && features[8] <= 1.0f);  // autocorr in [-1, 1]
-    TEST_ASSERT_TRUE(features[9] >= 0);  // turb_mad >= 0
-    // features[10] = slope (can be any value)
-    TEST_ASSERT_TRUE(features[11] >= 0); // waveform_length >= 0
+    TEST_ASSERT_TRUE(features[6] >= -1.0f && features[6] <= 1.0f);  // autocorr in [-1, 1]
+    TEST_ASSERT_TRUE(features[7] >= 0);  // turb_mad >= 0
+    TEST_ASSERT_TRUE(features[8] >= 0);  // waveform_length >= 0
 }
 
 void test_feature_extraction_empty_buffer(void) {
     float turb_buffer[50] = {0};
-    float features[12];
+    float features[ML_NUM_FEATURES];
     
     extract_ml_features(turb_buffer, 0, nullptr, 0, features);
     
     // All features should be 0 for empty buffer
-    for (int i = 0; i < 12; i++) {
+    for (int i = 0; i < ML_NUM_FEATURES; i++) {
         TEST_ASSERT_EQUAL_FLOAT(0.0f, features[i]);
     }
 }

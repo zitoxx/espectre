@@ -34,6 +34,7 @@ All notable changes to this project will be documented in this file.
 - **Training leakage protections added**: CV moved from `StratifiedKFold` to `StratifiedGroupKFold` (grouped by chip), and internal validation split is explicitly stratified.
 - **Hard-positive mining added**: subtle near-threshold motion samples are up-weighted to improve worst-chip recall.
 - **Feature set refreshed**: `turb_delta` was replaced by `waveform_length`, and the latest long-run tuning swapped `turb_zcr` for `turb_iqr` to reduce quiet-window false positives while preserving recall across chips.
+- **ML feature set trimmed for holdout robustness**: the production MLP now uses 9 inputs (`turb_mean`, `turb_std`, `turb_max`, `turb_min`, `turb_iqr`, `turb_skewness`, `turb_autocorr`, `turb_mad`, `waveform_length`), dropping `turb_kurtosis`, `turb_entropy`, and `turb_slope` after multi-seed long-recording sweeps showed better real-world behavior with the smaller set.
 - **Model and runtime chain re-aligned**: ML weights were retrained using Hampel-filtered input to keep train/deploy behavior consistent.
 - **Datasets recollected for all chips**: previous captures were replaced with new recordings under stricter quality controls (gain-locked, 128SC HT20-only, balanced baseline/motion ratios); the new dataset is used across the full pipeline — NBVI validation, MVS performance tests, and ML training.
 - **Validation quality controls tightened**: strict targets (`recall >95%`, `FP <5%`) were enforced for `test_mvs_default_subcarriers`.

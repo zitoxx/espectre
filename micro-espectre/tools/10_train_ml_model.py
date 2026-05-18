@@ -147,8 +147,9 @@ from features import (
 # Feature Selection
 # ============================================================================
 #
-# 12 features: 11 turbulence-based + 1 temporal.
-# Top-3 by SHAP: turb_autocorr (40.9%), turb_std (12.0%), turb_mean (8.1%).
+# 9 features: 8 turbulence-based + 1 temporal.
+# Current production set drops turb_kurtosis, turb_entropy, and turb_slope
+# after long-recording sweeps showed they reduced deployment robustness.
 # See ALGORITHMS.md "Feature Importance" for full SHAP/correlation table.
 # ============================================================================
 
@@ -158,7 +159,7 @@ from features import (
 # Change this list to experiment with different features.
 # Available features are defined in src/features.py
 #
-# Current default (12 features):
+# Current default (9 features):
 TRAINING_FEATURES = DEFAULT_FEATURES
 
 # To experiment with different features, define a custom list here.

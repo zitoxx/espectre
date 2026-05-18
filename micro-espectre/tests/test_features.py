@@ -324,31 +324,33 @@ class TestCalcMAD:
 class TestExtractAllFeatures:
     """Test full feature extraction"""
     
-    def test_returns_12_features(self):
-        """Test that 12 features are returned"""
+    def test_returns_default_feature_count(self):
+        """Test that the default feature count is returned"""
         buffer = [float(i) for i in range(50)]
         features = extract_features_by_name(buffer, 50, feature_names=DEFAULT_FEATURES)
-        assert len(features) == 12
+        assert len(features) == len(DEFAULT_FEATURES)
     
     def test_empty_buffer_returns_zeros(self):
         """Test that empty buffer returns zeros"""
         features = extract_features_by_name([], 0, feature_names=DEFAULT_FEATURES)
-        assert features == [0.0] * 12
+        assert features == [0.0] * len(DEFAULT_FEATURES)
     
     def test_single_value_returns_zeros(self):
         """Test that single-value buffer returns zeros"""
         features = extract_features_by_name([5.0], 1, feature_names=DEFAULT_FEATURES)
-        assert features == [0.0] * 12
+        assert features == [0.0] * len(DEFAULT_FEATURES)
     
     def test_feature_names_match(self):
-        """Test that FEATURE_NAMES has 12 entries"""
-        assert len(FEATURE_NAMES) == 12
+        """Test that FEATURE_NAMES matches DEFAULT_FEATURES"""
+        assert len(FEATURE_NAMES) == len(DEFAULT_FEATURES)
     
     def test_amplitudes_parameter_ignored(self):
         """Test that amplitudes parameter does not affect output"""
         buffer = [float(i) for i in range(50)]
         features_no_amp = extract_features_by_name(buffer, 50, feature_names=DEFAULT_FEATURES)
-        features_with_amp = extract_features_by_name(buffer, 50, amplitudes=[1.0] * 12, feature_names=DEFAULT_FEATURES)
+        features_with_amp = extract_features_by_name(
+            buffer, 50, amplitudes=[1.0] * 12, feature_names=DEFAULT_FEATURES
+        )
         assert features_no_amp == features_with_amp
     
     def test_all_features_are_float(self):
@@ -373,4 +375,5 @@ class TestExtractAllFeatures:
         # Std should be higher for motion
         assert motion_features[1] > idle_features[1]
         # MAD should be higher for motion
-        assert motion_features[9] > idle_features[9]
+        mad_idx = FEATURE_NAMES.index('turb_mad')
+        assert motion_features[mad_idx] > idle_features[mad_idx]

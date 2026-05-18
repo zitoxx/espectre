@@ -185,11 +185,10 @@ def calc_waveform_length(turbulence_buffer, buffer_count):
     return total
 
 
-# Default feature set (12 features from turbulence window statistics/temporal patterns)
+# Default feature set (9 features from turbulence window statistics/temporal patterns)
 DEFAULT_FEATURES = [
     'turb_mean', 'turb_std', 'turb_max', 'turb_min', 'turb_iqr',
-    'turb_skewness', 'turb_kurtosis', 'turb_entropy', 'turb_autocorr', 'turb_mad',
-    'turb_slope', 'waveform_length'
+    'turb_skewness', 'turb_autocorr', 'turb_mad', 'waveform_length'
 ]
 
 

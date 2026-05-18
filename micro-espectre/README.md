@@ -404,7 +404,7 @@ DETECTION_ALGORITHM = "mvs"   # "mvs" (default) or "ml"
 | Algorithm | Method | Calibration | Boot Time |
 |-----------|--------|-------------|-----------|
 | **MVS** (default) | Moving Variance Segmentation of Turbulence | Subcarriers + Threshold | ~13s |
-| **ML** | Neural Network (12 features → MLP) | **None** (fixed subcarriers) | **~3s** |
+| **ML** | Neural Network (9 features → MLP) | **None** (fixed subcarriers) | **~3s** |
 
 ### 3. Calibration Algorithm (MVS only)
 
@@ -499,12 +499,12 @@ Micro-ESPectre includes a **neural network-based motion detector** as an experim
 
 ### ML Detector (Experimental)
 
-The ML detector (`DETECTION_ALGORITHM = "ml"`) is a compact MLP trained on real CSI data. It extracts 12 turbulence-window features, including robust spread statistics such as `turb_iqr` and `turb_mad`, and outputs a motion probability.
+The ML detector (`DETECTION_ALGORITHM = "ml"`) is a compact MLP trained on real CSI data. It extracts 9 turbulence-window features, including robust spread statistics such as `turb_iqr` and `turb_mad`, and outputs a motion probability.
 
 | Aspect | Details |
 |--------|---------|
-| Architecture | MLP (12 → 24 → 12 → 1) |
-| Input | 12 features from 100-packet window |
+| Architecture | MLP (9 → 24 → 12 → 1) |
+| Input | 9 features from 100-packet window |
 | Output | Probability (0.0 - 1.0), threshold at 0.5 |
 | Filters | Supports low-pass and Hampel filters (same as MVS) |
 | Performance | See [PERFORMANCE.md](../PERFORMANCE.md) for per-chip results |

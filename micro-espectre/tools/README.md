@@ -244,6 +244,31 @@ python 11_validate_dataset_quality.py --strict     # Fail on warnings too
 
 ---
 
+### 12. ML Feature-Set Sweep (`12_sweep_ml_feature_sets.py`)
+
+**Purpose**: Run the full long-holdout feature-selection campaign for the ML detector
+
+- Executes a reproducible workflow for:
+  - baseline measurement
+  - targeted single-feature ablations
+  - curated candidate feature sets
+  - multi-seed robustness filtering
+  - final winner promotion
+- Uses the same grouped CV, paired validation, and long-recording protocol used during the latest production sweep
+- Saves detailed results to `micro-espectre/models/ml_feature_sweep_results.json`
+- Avoids overwriting production exports during intermediate candidate evaluation
+
+```bash
+python 12_sweep_ml_feature_sets.py
+python 12_sweep_ml_feature_sets.py --skip-final-export
+python 12_sweep_ml_feature_sets.py --fp-weight 2.0
+python 12_sweep_ml_feature_sets.py --exclude-chip ESP32
+```
+
+Use this tool when comparing multiple ML feature sets against the long-recording holdout. For a single production training/export run, use `10_train_ml_model.py` instead.
+
+---
+
 ## Usage Examples
 
 ### Basic Analysis Workflow

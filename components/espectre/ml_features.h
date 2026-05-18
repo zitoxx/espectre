@@ -1,10 +1,10 @@
 /*
  * ESPectre - ML Feature Extraction
  * 
- * Extracts 12 non-redundant features from CSI data for ML-based motion
+ * Extracts 9 non-redundant features from CSI data for ML-based motion
  * detection. Port of micro-espectre/src/features.py to C++.
  * 
- * All 12 features are computed from the turbulence buffer (100 samples).
+ * All 9 features are computed from the turbulence buffer (100 samples).
  * 
  * Features (in order):
  *  0. turb_mean      - Mean of turbulence buffer
@@ -13,12 +13,9 @@
  *  3. turb_min       - Minimum value
  *  4. turb_iqr       - Interquartile range
  *  5. turb_skewness  - Fisher's skewness (3rd moment)
- *  6. turb_kurtosis  - Fisher's kurtosis (4th moment)
- *  7. turb_entropy   - Shannon entropy (turbulence)
- *  8. turb_autocorr  - Lag-1 autocorrelation
- *  9. turb_mad       - Median absolute deviation
- * 10. turb_slope     - Linear regression slope
- * 11. waveform_length - Sum of absolute first differences
+ *  6. turb_autocorr  - Lag-1 autocorrelation
+ *  7. turb_mad       - Median absolute deviation
+ *  8. waveform_length - Sum of absolute first differences
  * 
  * Author: Francesco Pace <francesco.pace@gmail.com>
  * License: GPLv3
@@ -35,7 +32,7 @@ namespace esphome {
 namespace espectre {
 
 // Number of features extracted
-constexpr uint8_t ML_NUM_FEATURES = 12;
+constexpr uint8_t ML_NUM_FEATURES = 9;
 
 // Number of entropy bins
 constexpr uint8_t ML_ENTROPY_BINS = 10;
@@ -253,15 +250,15 @@ inline float calc_waveform_length(const float* values, uint16_t count) {
 }
 
 /**
- * Extract all 12 ML features from turbulence buffer and amplitudes.
+ * Extract all 9 ML features from turbulence buffer and amplitudes.
  * 
- * All 12 features are computed from the turbulence buffer (typically 100 samples).
+ * All 9 features are computed from the turbulence buffer (typically 100 samples).
  * 
  * @param turb_buffer Turbulence buffer
  * @param turb_count Number of valid values in turbulence buffer
  * @param amplitudes Subcarrier amplitudes (unused, kept for API compatibility)
  * @param amp_count Number of amplitude values
- * @param features_out Output array for 12 features (must be pre-allocated)
+ * @param features_out Output array for 9 features (must be pre-allocated)
  */
 inline void extract_ml_features(const float* turb_buffer, uint16_t turb_count,
                                 const float* amplitudes, uint8_t amp_count,
@@ -304,30 +301,11 @@ inline void extract_ml_features(const float* turb_buffer, uint16_t turb_count,
     // Skewness (pre-computed mean/std passed to avoid redundant calculation)
     float turb_skewness = calc_skewness(turb_buffer, turb_count, turb_mean, turb_std);
     
-    // Kurtosis (4th moment)
-    float turb_kurtosis = calc_kurtosis(turb_buffer, turb_count, turb_mean, turb_std);
-    
-    // Shannon entropy (turbulence)
-    float turb_entropy = calc_entropy(turb_buffer, turb_count);
-    
     // Lag-1 autocorrelation
     float turb_autocorr = calc_autocorrelation(turb_buffer, turb_count, turb_mean, turb_var, 1);
     
     // Median absolute deviation
     float turb_mad = calc_mad(turb_buffer, turb_count);
-    
-    // Temporal features: slope via linear regression
-    float mean_i = (turb_count - 1) / 2.0f;
-    float numerator = 0.0f;
-    float denominator = 0.0f;
-    
-    for (uint16_t i = 0; i < turb_count; i++) {
-        float diff_i = i - mean_i;
-        float diff_x = turb_buffer[i] - turb_mean;
-        numerator += diff_i * diff_x;
-        denominator += diff_i * diff_i;
-    }
-    float turb_slope = (denominator > 0.0f) ? (numerator / denominator) : 0.0f;
     
     // Temporal variation feature
     float waveform_length = calc_waveform_length(turb_buffer, turb_count);
@@ -339,12 +317,9 @@ inline void extract_ml_features(const float* turb_buffer, uint16_t turb_count,
     features_out[3] = turb_min;        // 3
     features_out[4] = turb_iqr;        // 4
     features_out[5] = turb_skewness;   // 5
-    features_out[6] = turb_kurtosis;   // 6
-    features_out[7] = turb_entropy;    // 7
-    features_out[8] = turb_autocorr;   // 8
-    features_out[9] = turb_mad;        // 9
-    features_out[10] = turb_slope;     // 10
-    features_out[11] = waveform_length;  // 11
+    features_out[6] = turb_autocorr;   // 6
+    features_out[7] = turb_mad;        // 7
+    features_out[8] = waveform_length; // 8
 }
 
 }  // namespace espectre

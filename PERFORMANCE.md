@@ -81,7 +81,7 @@ Current C++ and Python validation runs match on this dataset/configuration (same
 | ESP32-S3 | ML | 100.0% | 100.0% | 0.0% | 100.0% |
 | ESP32 | MVS Default | 99.4% | 100.0% | 0.0% | 99.7% |
 | ESP32 | MVS + NBVI | 99.4% | 100.0% | 0.0% | 99.7% |
-| ESP32 | ML | 99.9% | 100.0% | 0.0% | 99.9% |
+| ESP32 | ML | 98.6% | 100.0% | 0.0% | 99.3% |
 
 **MVS Default**: Uses default subcarriers.
 **MVS + NBVI**: Uses NBVI auto-calibration (production case).
@@ -151,7 +151,7 @@ The worst-case path is ML on ESP32-C3 (~3.5 ms peak, ~35% CPU), which still leav
 
 **MVS**: Extracts a single feature (spatial turbulence) and its moving variance.
 
-**ML**: Extracts 12 statistical features from sliding window, then runs MLP inference (12 → 24 → 12 → 1 = 588 MACs).
+**ML**: Extracts 9 statistical features from sliding window, then runs MLP inference (9 → 24 → 12 → 1 = 516 MACs).
 The MLP itself is lightweight; most time is spent on feature extraction. 
 For ML architecture details, see [ALGORITHMS.md](micro-espectre/ALGORITHMS.md#architecture).
 
@@ -172,13 +172,13 @@ Methodology:
 | Chip | Algorithm | Recall | Precision | FP Rate | F1-Score | FP Count |
 |------|-----------|--------|-----------|---------|----------|----------|
 | C3 | MVS + NBVI | 100.0% | 100.0% | 0.0% | 100.0% | 0 |
-| C3 | ML | 100.0% | 100.0% | 0.0% | 100.0% | 0 |
+| C3 | ML | 98.0% | 100.0% | 0.0% | 99.0% | 0 |
 | C5 | MVS + NBVI | 100.0% | 91.1% | 7.9% | 95.3% | 253 |
 | C5 | ML | 100.0% | 91.1% | 7.9% | 95.3% | 254 |
 | C6 | MVS + NBVI | 100.0% | 81.4% | 21.8% | 89.7% | 691 |
-| C6 | ML | 90.8% | 93.2% | 6.4% | 92.0% | 201 |
+| C6 | ML | 94.9% | 93.3% | 6.5% | 94.1% | 205 |
 | S3 | MVS + NBVI | 100.0% | 96.9% | 2.8% | 98.4% | 86 |
-| S3 | ML | 94.1% | 95.8% | 3.7% | 94.9% | 113 |
+| S3 | ML | 98.6% | 95.5% | 4.1% | 97.0% | 127 |
 
 ---
 
