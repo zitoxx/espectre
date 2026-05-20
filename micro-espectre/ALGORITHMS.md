@@ -508,21 +508,23 @@ Current production topology:
 ```
 Input (9 features)
     ↓
-Dense(24, ReLU)      ← 9×24 + 24 = 240 parameters
+Dense(32, ReLU)      ← 9×32 + 32 = 320 parameters
     ↓
-Dense(12, ReLU)      ← 24×12 + 12 = 300 parameters
+Dense(16, ReLU)      ← 32×16 + 16 = 528 parameters
     ↓
-Dense(1, Sigmoid)    ← 12×1 + 1 = 13 parameters
+Dense(1, Sigmoid)    ← 16×1 + 1 = 17 parameters
     ↓
 Output (probability)
 ```
 
-**Total**: 553 parameters, ~2.2 KB (constexpr float weights)
+**Total**: 865 parameters, ~3.4 KB (constexpr float weights)
 
-The hidden-layer topology stayed unchanged through the latest sweep; only the
-input feature set was reduced from 12 to 9 after long-recording holdout
-experiments showed that `turb_kurtosis`, `turb_entropy`, and `turb_slope`
-hurt deployment robustness more than they helped paired validation.
+The input feature set was previously reduced from 12 to 9 after long-recording
+holdout experiments showed that `turb_kurtosis`, `turb_entropy`, and
+`turb_slope` hurt deployment robustness more than they helped paired
+validation. A later FP-first topology sweep then replaced the old `24-12`
+hidden layout with `32-16`, because the wider model improved long-run false
+positive behavior without regressing the paired validation gate.
 
 ### Inference Pipeline
 
@@ -689,6 +691,8 @@ The training pipeline includes:
 ### Performance
 
 ML's strength is **generalization without runtime calibration**: it uses fixed subcarriers and pre-trained weights, so it can boot quickly and perform strongly on the paired real-data validation set.
+
+Historical experiment logs that informed the current production choices are collected in [EXPERIMENTS.md](EXPERIMENTS.md). This keeps the algorithm reference focused on the currently promoted pipeline while preserving the rationale behind rejected or superseded approaches.
 
 See [PERFORMANCE.md](../PERFORMANCE.md) for detailed per-chip results and [TUNING.md](../TUNING.md) for configuration and tuning guidance.
 
