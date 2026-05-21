@@ -790,6 +790,10 @@ def collect_csi_data(args):
 
 def detect_live_motion(args):
     """Run live ML motion detection on PC from the UDP CSI stream."""
+    parent_dir = Path(__file__).parent
+    if str(parent_dir) not in sys.path:
+        sys.path.insert(0, str(parent_dir))
+
     try:
         from tools.csi_utils import CSIReceiver, get_default_bind_host
         import src.config as config
@@ -892,11 +896,12 @@ def detect_live_motion(args):
         state["packet_count"] += 1
         state["publish_counter"] += 1
 
-        raw_turbulence, _ = detector._context.calculate_spatial_turbulence(
-            pkt.iq_raw,
-            subcarriers,
-            return_amplitudes=True,
-        )
+        if args.log_turbulence:
+            raw_turbulence = detector._context._compute_spatial_turbulence_in_buffer(
+                pkt.iq_raw, subcarriers
+            )
+        else:
+            raw_turbulence = None
         detector.process_packet(pkt.iq_raw, subcarriers)
         filtered_turbulence = detector._context.last_turbulence
         runtime_policy.note_packet()
@@ -1219,7 +1224,7 @@ Examples:
     detect_parser.add_argument('--print-every-n', type=int, default=200,
                               help='Print periodic stats every N packets (default: 200)')
     detect_parser.add_argument('--log-features', action='store_true',
-                              help='Print the 12 ML features after each published sample')
+                              help='Print the 9 ML features after each published sample')
     detect_parser.add_argument('--log-turbulence', action='store_true',
                               help='Print raw/filtered turbulence and recent buffer tail after each publish')
     detect_parser.add_argument('--log-only-motion', action='store_true',

@@ -39,7 +39,7 @@ except ImportError:
     )
 
 # Re-export for convenience
-__all__ = ['MLDetector', 'predict', 'is_motion', 'DEFAULT_SUBCARRIERS']
+__all__ = ['MLDetector', 'predict', 'is_motion', 'DEFAULT_SUBCARRIERS', 'FEATURE_NAMES']
 
 # ML-specific constants (unified with MVS for consistent UI)
 ML_DEFAULT_THRESHOLD = 5.0
