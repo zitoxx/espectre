@@ -30,15 +30,18 @@ CV normalization is applied per-file for MVS based on whether data was collected
 
 ---
 
-## Test Data
+## Training Dataset
+
+`micro-espectre/data/dataset_info.json` contains multiple baseline/movement captures per chip across different collection sessions and environments. The counts below are aggregated packet totals across all available training captures.
 
 | Chip | Baseline | Movement | Total | Gain Lock |
 |------|----------|----------|-------|-----------|
-| ESP32-C3 | 2684 | 2658 | 5342 | Yes |
-| ESP32-C5 | 2609 | 2607 | 5216 | Yes |
-| ESP32-C6 | 2697 | 2779 | 5476 | Yes |
-| ESP32-S3 | 2655 | 2670 | 5325 | Yes |
-| ESP32 | 2081 | 2189 | 4270 | No |
+| ESP32-C3 | 4094 | 4076 | 8170 | Yes |
+| ESP32-C5 | 4350 | 4336 | 8686 | Yes |
+| ESP32-C6 | 4755 | 4890 | 9645 | Yes |
+| ESP32-S3 | 4360 | 4375 | 8735 | Yes |
+| ESP32 | 4159 | 4083 | 8242 | No |
+| Total | 21718 | 21760 | 43478 | Mixed |
 
 Data location: `micro-espectre/data/`
 
@@ -47,7 +50,7 @@ Data location: `micro-espectre/data/`
 ## Running Tests
 
 ```bash
-source .venv/bin/activate
+source venv/bin/activate
 
 # C++
 cd test && pio test -f test_motion_detection -v
@@ -63,7 +66,7 @@ cd micro-espectre && pytest tests/test_validation_long_recordings.py -v -s
 
 ## Current Results
 
-Current C++ and Python validation runs match on this dataset/configuration (same algorithms, same data, same methodology), so the table below reflects the shared result.
+**Last verified:** 2026-05-21 (v2.8.0)
 
 | Chip | Algorithm | Recall | Precision | FP Rate | F1-Score |
 |------|-----------|--------|-----------|---------|----------|
@@ -186,8 +189,8 @@ Methodology:
 
 | Date | Version | Dataset | Calibration | Algorithm | Recall | Precision | FP Rate | F1-Score |
 |------|---------|---------|-------------|-----------|--------|-----------|---------|----------|
-| 2026-05-20 | v2.8.0 | C6 |  -   | ML + Hampel | 100.0% | 100.0% | 0.0% | 100.0% |
-| 2026-05-04 | v2.8.0 | C6 | NBVI | MVS + Hampel| 99.6% | 100.0% | 0.0% | 99.8% |
+| 2026-05-21 | v2.8.0 | C6 |  -   | ML + Hampel | 100.0% | 100.0% | 0.0% | 100.0% |
+| 2026-05-21 | v2.8.0 | C6 | NBVI | MVS + Hampel| 99.6% | 100.0% | 0.0% | 99.8% |
 | 2026-03-11 | v2.6.1 | C6 |  -   | ML | 100.0% | 100.0% | 0.0% | 100.0% |
 | 2026-03-11 | v2.6.1 | C6 | NBVI | MVS | 99.3% | 100.0% | 0.0% | 99.7% |
 | 2026-03-08 | v2.6.0 | C6 |  -   | ML | 100.0% | 100.0% | 0.0% | 100.0% |
